@@ -18,6 +18,7 @@ import 'BottomBar.dart';
 
 // Class for stt
 const languages = const [
+  const Language('Chinese', 'zh_CN'),
   const Language('English', 'en_US'),
   const Language('Francais', 'fr_FR'),
   const Language('Pусский', 'ru_RU'),
@@ -271,6 +272,9 @@ class _ClsHomeState extends State<ClsHome> {
   void onRecognitionResult(String text) {
     setState(() {
       transcription = text;
+      gv.timHome = DateTime.now().millisecondsSinceEpoch;
+      print('sent text: ' + text);
+      gv.socket.emit('ClientNeedAIML', [text]);
     });
   }
 

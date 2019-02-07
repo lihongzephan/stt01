@@ -123,6 +123,8 @@ class gv {
   // Var For Home
   static bool bolHomeFirstIn = false;
   static List<String> listText = [];
+  static var aryHomeAIMLResult = [];
+  static var timHome = DateTime.now().millisecondsSinceEpoch;
 
   // Var For Login
   static var strLoginID = '';
@@ -329,6 +331,19 @@ class gv {
         return;
       }
       aryActivateResult = data;
+    });
+
+    socket.on('SocketSendAIMLToClient', (data) {
+      // Check if the result comes back too late
+      print('Got result from server');
+      if (DateTime.now().millisecondsSinceEpoch - timHome >
+          intSocketTimeout) {
+        print('Home Receive AIML Timeout');
+        return;
+      }
+      aryHomeAIMLResult = data;
+      print('Got result from server: ' + aryHomeAIMLResult[0]);
+      ut.showToast('Answer: ' + aryHomeAIMLResult[0], true);
     });
 
     // Connect Socket
