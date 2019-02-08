@@ -92,7 +92,15 @@ class MainBody extends StatelessWidget {
         return ClsForgetPassword();
         break;
       case 'Home':
-        return ClsHome();
+        return StoreProvider(
+          store: gv.storeHome,
+          child:StoreConnector<int, int>(
+            builder: (BuildContext context, int intTemp) {
+              return ClsHome(intTemp);
+            }, converter: (Store<int> sintTemp) {
+            return sintTemp.state;
+          },),
+        );
         break;
       case 'Login':
         return ClsLogin();

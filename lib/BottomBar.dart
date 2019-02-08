@@ -45,7 +45,7 @@ class _ClsBottomState extends State<ClsBottom> {
                     store: gv.storeHome,
                     child: StoreConnector<int, int>(
                       builder: (BuildContext context, int intTemp) {
-                        return ClsHome();
+                        return ClsHome(intTemp);
                       },
                       converter: (Store<int> sintTemp) {
                         return sintTemp.state;
