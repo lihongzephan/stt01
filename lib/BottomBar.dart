@@ -38,23 +38,22 @@ class _ClsBottomState extends State<ClsBottom> {
           gv.gstrCurPage = 'Home';
 
           // Goto Home
-          Navigator.push(
-            context,
+          Navigator.pushAndRemoveUntil(context,
             MaterialPageRoute(
-              builder: (context) => StoreProvider(
-                    store: gv.storeHome,
-                    child: StoreConnector<int, int>(
-                      builder: (BuildContext context, int intTemp) {
-                        return ClsHome(intTemp);
-                      },
-                      converter: (Store<int> sintTemp) {
-                        return sintTemp.state;
-                      },
-                    ),
+                builder: (context) => StoreProvider(
+                  store: gv.storeHome,
+                  child: StoreConnector<int, int>(
+                    builder: (BuildContext context, int intTemp) {
+                      return ClsHome(intTemp);
+                    },
+                    converter: (Store<int> sintTemp) {
+                      return sintTemp.state;
+                    },
                   ),
-            ),
+                )),
+                (_) => false,
           );
-          Navigator.pushNamedAndRemoveUntil(context, '/', (_) => false);
+
           break;
         case 1:
           // Page Settings Clicked
@@ -62,21 +61,21 @@ class _ClsBottomState extends State<ClsBottom> {
           gv.gstrCurPage = 'SettingsMain';
 
           // Goto SettingsMain
-          Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => StoreProvider(
-                        store: gv.storeSettingsMain,
-                        child: StoreConnector<int, int>(
-                          builder: (BuildContext context, int intTemp) {
-                            return ClsSettingsMain(intTemp);
-                          },
-                          converter: (Store<int> sintTemp) {
-                            return sintTemp.state;
-                          },
-                        ),
-                      )));
-          Navigator.pushNamedAndRemoveUntil(context, '/', (_) => false);
+          Navigator.pushAndRemoveUntil(context,
+            MaterialPageRoute(
+                builder: (context) => StoreProvider(
+                  store: gv.storeSettingsMain,
+                  child: StoreConnector<int, int>(
+                    builder: (BuildContext context, int intTemp) {
+                      return ClsSettingsMain(intTemp);
+                    },
+                    converter: (Store<int> sintTemp) {
+                      return sintTemp.state;
+                    },
+                  ),
+                )),
+                (_) => false,
+          );
           break;
         default:
           break;

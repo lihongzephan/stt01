@@ -36,11 +36,10 @@ class _ClsRegisterState extends State<ClsRegister> {
     gv.gstrCurPage = 'Login';
 
     // Goto Login
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => ClsLogin()),
+    Navigator.pushAndRemoveUntil(context,
+      MaterialPageRoute(builder: (BuildContext context) => ClsLogin()),
+          (_) => false,
     );
-    Navigator.pushNamedAndRemoveUntil(context, '/', (_) => false);
   }
 
   void funLoginForgetPW() {
@@ -48,12 +47,11 @@ class _ClsRegisterState extends State<ClsRegister> {
     gv.gstrLastPage = gv.gstrCurPage;
     gv.gstrCurPage = 'ForgetPassword';
 
-    // Goto Register
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => ClsForgetPassword()),
+    // Goto Forget Password
+    Navigator.pushAndRemoveUntil(context,
+      MaterialPageRoute(builder: (BuildContext context) => ClsForgetPassword()),
+          (_) => false,
     );
-    Navigator.pushNamedAndRemoveUntil(context, '/', (_) => false);
   }
 
 
@@ -149,11 +147,10 @@ class _ClsRegisterState extends State<ClsRegister> {
               // Goto Login
               gv.gstrLastPage = 'Register';
               gv.gstrCurPage = 'Login';
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => ClsLogin()),
+              Navigator.pushAndRemoveUntil(context,
+                MaterialPageRoute(builder: (BuildContext context) => ClsLogin()),
+                    (_) => false,
               );
-              Navigator.pushNamedAndRemoveUntil(context, '/', (_) => false);
             } else if (gv.aryRegisterResult[0] == '1000') {
               gv.strRegisterError = ls.gs('RegisterErrorUserIDExist');
               setState(() {

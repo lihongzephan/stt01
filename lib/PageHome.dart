@@ -154,6 +154,7 @@ class ClsHome extends StatelessWidget {
                   child: Center(
                     child: ListView.builder(
                         shrinkWrap: true,
+                        reverse: true,
                         itemCount: gv.listText.length,
                         itemBuilder: (context, index) {
                           return Text((index + 1).toString() + ': ' + gv.listText[index]);
