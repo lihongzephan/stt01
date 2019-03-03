@@ -38,10 +38,10 @@ class Language {
 
 enum TtsState { playing, stopped }
 
-
 // Home Page
 class ClsHome extends StatelessWidget {
   final intState;
+
   ClsHome(this.intState);
 
   //@override
@@ -82,13 +82,12 @@ class ClsHome extends StatelessWidget {
 //        .then((res) => setState(() => _speechRecognitionAvailable = res));
 //  }
 
-
   void funHomeInputAudio() {
     //ut.showToast(listText[listText.length - 1], true);
     //gv.listText.add(gv.listText.length.toString());
     //gv.storeHome.dispatch(Actions.Increment);
     //_speechRecognitionAvailable &&
-    if ( !gv.sttIsListening) {
+    if (!gv.sttIsListening) {
       // Start Record
       //gv.bolPressedRecord = false;
       //start();
@@ -109,6 +108,56 @@ class ClsHome extends StatelessWidget {
 //    }
   }
 
+  void funCheckJoyStick() {
+    int x = (gv.dblAlignX * 10).toInt();
+    int y = (gv.dblAlignY * 10).toInt();
+
+    int intLeft = 0;
+    int intRight = 0;
+
+    // Checking
+    if (x > 0) {
+      if (y >= x) {
+        intLeft = -1;
+        intRight = -1;
+      } else if (y <= -x) {
+        intLeft = 1;
+        intRight = 1;
+      } else {
+        intLeft = 1;
+        intRight = -1;
+      }
+    } else if (x == 0) {
+      if (y > 0) {
+        intLeft = -1;
+        intRight = -1;
+      } else if (y == 0) {
+        intLeft = 0;
+        intRight = 0;
+      } else {
+        intLeft = 1;
+        intRight = 1;
+      }
+    } else {
+      if (y >= -x) {
+        intLeft = -1;
+        intRight = -1;
+      } else if (y <= x) {
+        intLeft = 1;
+        intRight = 1;
+      } else {
+        intLeft = -1;
+        intRight = 1;
+      }
+    }
+    //print(intLeft.toString() + ' , ' + intRight.toString());
+    // Socket emit
+    if (intLeft != gv.intLastLeft || intRight != gv.intLastRight) {
+      gv.socket.emit('RBMoveRobot', [ctlRBCode.text, ['F', intLeft, intRight, 0]]);
+      gv.intLastLeft = intLeft;
+      gv.intLastRight = intRight;
+    }
+  }
 
 
 
@@ -124,58 +173,144 @@ class ClsHome extends StatelessWidget {
     }
     return RaisedButton(
       shape: new RoundedRectangleBorder(
-          borderRadius: new BorderRadius.circular(
-              sv.dblDefaultRoundRadius)),
+          borderRadius: new BorderRadius.circular(sv.dblDefaultRoundRadius)),
       textColor: Colors.white,
       color: color,
       onPressed: () => funHomeInputAudio(),
-      child: Text(
-          text,
-          style: TextStyle(
-              fontSize:
-              sv.dblDefaultFontSize * 1)),
-     );
+      child: Text(text, style: TextStyle(fontSize: sv.dblDefaultFontSize * 1)),
+    );
   }
 
+  var ctlRBCode = new TextEditingController();
+
   Widget Body() {
+    ctlRBCode.text = gv.strRBCode;
     return Container(
-        height: sv.dblBodyHeight,
-        width: sv.dblScreenWidth,
-        child: Center(
-          child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
+      // height: sv.dblBodyHeight,
+      width: sv.dblScreenWidth,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Container(
+              height: sv.dblBodyHeight / 2,
+              width: sv.dblScreenWidth,
+              child: Align(
+                alignment: Alignment(gv.dblAlignX, gv.dblAlignY),
+                child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onPanStart: (dragDetails1) {
+                      // print('Start: ' + dragDetails1.toString());
+                    },
+                    onPanUpdate: (dragDetails2) {
+                      // print('Update: ' + dragDetails2.toString());
+                      gv.dblAlignX = (dragDetails2.globalPosition.dx * 2 -
+                              sv.dblScreenWidth) /
+                          sv.dblScreenWidth;
+                      gv.dblAlignY =
+                          ((dragDetails2.globalPosition.dy - sv.dblTopHeight * 1.5) *
+                                      2 -
+                                  sv.dblScreenHeight / 2) /
+                              sv.dblScreenHeight *
+                              2;
+                      if (gv.dblAlignY > 1) {
+                        gv.dblAlignY = 1;
+                      }
+                      gv.storeHome.dispatch(Actions.Increment);
+                      funCheckJoyStick();
+                    },
+                    onPanEnd: (dragDetails1) {
+                      gv.dblAlignX = 0;
+                      gv.dblAlignY = 0;
+                      gv.storeHome.dispatch(Actions.Increment);
+                      gv.socket.emit('RBMoveRobot', [
+                        ctlRBCode.text,
+                        ['F', 0, 0, 0]
+                      ]);
+                      gv.intLastLeft = 0;
+                      gv.intLastRight = 0;
+                    },
+                    child: Container(
+                      height: sv.dblScreenWidth / 5,
+                      width: sv.dblScreenWidth / 5,
+                      decoration: BoxDecoration(
+                        borderRadius:
+                            BorderRadius.circular(sv.dblScreenWidth / 10),
+                        color: Colors.lightBlue,
+                        border: Border.all(
+                          color: Colors.blueAccent,
+                          width: 8.0,
+                        ),
+                      ),
+                    )),
+              ),
+            ),
+            Row(
               children: <Widget>[
-                Text(' '),
-                Text(' '),
-                Container(
-                  height: sv.dblBodyHeight / 2,
-                  width: sv.dblScreenWidth / 2,
-                  child: Center(
-                    child: ListView.builder(
-                        shrinkWrap: true,
-                        reverse: true,
-                        itemCount: gv.listText.length,
-                        itemBuilder: (context, index) {
-                          return Text((index + 1).toString() + ': ' + gv.listText[index]);
-                        }),
-                  ),
-                ),
-                Text(' '),
-                Text(' '),
-                Container(
-                  height: sv.dblBodyHeight / 4,
-                  width: sv.dblScreenWidth / 4,
-                  child: Center(
-                    child: SizedBox(
-                      height: sv.dblDefaultFontSize * 2.5,
-                      child: RecordButton(),
+                Text(ut.Space(sv.gintSpaceTextField)),
+                Expanded(
+                  child: TextField(
+                    controller: ctlRBCode,
+                    onChanged: (text) => gv.strRBCode = ctlRBCode.text,
+                    onTap: () {
+                      ctlRBCode.text = '';
+                      gv.strRBCode = ctlRBCode.text;
+                    },
+                    keyboardType: TextInputType.text,
+                    autofocus: false,
+                    decoration: InputDecoration(
+                      hintText: 'RB Code',
+                      contentPadding:
+                      EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(32.0)),
                     ),
                   ),
                 ),
+                Text(ut.Space(sv.gintSpaceTextField)),
               ],
-          ),
+            ),
+            Container(
+              height: sv.dblBodyHeight / 3,
+              width: sv.dblScreenWidth,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  Container(
+                    height: sv.dblBodyHeight / 6,
+                    // width: sv.dblScreenWidth / 2,
+                    child: Center(
+                      child: ListView.builder(
+                          shrinkWrap: true,
+                          reverse: true,
+                          itemCount: gv.listText.length,
+                          itemBuilder: (context, index) {
+                            return Text((index + 1).toString() +
+                                ': ' +
+                                gv.listText[index]);
+                          }),
+                    ),
+                  ),
+                  Text(' '),
+                  Container(
+                    // height: sv.dblBodyHeight / 4,
+                    // width: sv.dblScreenWidth / 4,
+                    child: Center(
+                      child: SizedBox(
+                        height: sv.dblDefaultFontSize * 2.5,
+                        width: sv.dblScreenWidth / 3,
+                        child: RecordButton(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
+      ),
     );
   }
 
@@ -194,108 +329,11 @@ class ClsHome extends StatelessWidget {
             ls.gs('Home'),
             style: TextStyle(fontSize: sv.dblDefaultFontSize),
           ),
-//          actions: [
-//            new PopupMenuButton<Language>(
-//              onSelected: _selectLangHandler,
-//              itemBuilder: (BuildContext context) => _buildLanguagesWidgets,
-//            )
-//          ],
         ),
         preferredSize: new Size.fromHeight(sv.dblTopHeight),
       ),
-//      body: new Padding(
-//          padding: new EdgeInsets.all(8.0),
-//          child: new Center(
-//            child: new Column(
-//              mainAxisSize: MainAxisSize.min,
-//              crossAxisAlignment: CrossAxisAlignment.stretch,
-//              children: [
-//                new Expanded(
-//                    child: new Container(
-//                        padding: const EdgeInsets.all(8.0),
-//                        color: Colors.grey.shade200,
-//                        child: new Text(transcription))),
-//                _buildButton(
-//                  onPressed: _speechRecognitionAvailable && !_isListening
-//                      ? () => start()
-//                      : null,
-//                  label: _isListening
-//                      ? 'Listening...'
-//                      : 'Listen (${selectedLang.code})',
-//                ),
-//                _buildButton(
-//                  onPressed: _isListening ? () => cancel() : null,
-//                  label: 'Cancel',
-//                ),
-//                _buildButton(
-//                  onPressed: _isListening ? () => stop() : null,
-//                  label: 'Stop',
-//                ),
-//              ],
-//            ),
-//          ),
-//      ),
       body: Body(),
       bottomNavigationBar: ClsBottom(),
     );
   }
-
-
-//  List<CheckedPopupMenuItem<Language>> get _buildLanguagesWidgets => languages
-//      .map((l) => new CheckedPopupMenuItem<Language>(
-//    value: l,
-//    checked: selectedLang == l,
-//    child: new Text(l.name),
-//  ))
-//      .toList();
-//
-//  void _selectLangHandler(Language lang) {
-//    setState(() => selectedLang = lang);
-//  }
-//
-//  Widget _buildButton({String label, VoidCallback onPressed}) => new Padding(
-//      padding: new EdgeInsets.all(12.0),
-//      child: new RaisedButton(
-//        color: Colors.cyan.shade600,
-//        onPressed: onPressed,
-//        child: new Text(
-//          label,
-//          style: const TextStyle(color: Colors.white),
-//        ),
-//      ));
-//
-//  void start() => _speech
-//      .listen(locale: selectedLang.code)
-//      .then((result) => print('_MyAppState.start => result $result'));
-//
-//  void cancel() =>
-//      _speech.cancel().then((result) => setState(() => _isListening = false));
-//
-//  void stop() => _speech.stop().then((result) {
-//    setState(() => _isListening = false);
-//  });
-//
-//  void onSpeechAvailability(bool result) =>
-//      setState(() => _speechRecognitionAvailable = result);
-//
-//  void onCurrentLocale(String locale) {
-//    print('_MyAppState.onCurrentLocale... $locale');
-//    setState(
-//            () => selectedLang = languages.firstWhere((l) => l.code == locale));
-//  }
-//
-//  void onRecognitionStarted() => setState(() => _isListening = true);
-//
-//  void onRecognitionResult(String text) {
-//    setState(() {
-//      transcription = text;
-//      gv.timHome = DateTime.now().millisecondsSinceEpoch;
-//      print('sent text: ' + text);
-//      gv.socket.emit('ClientNeedAIML', [text]);
-//    });
-//  }
-//
-//  void onRecognitionComplete() => setState(() => _isListening = false);
-//
-//  void errorHandler() => activateSpeechRecognizer();
 }

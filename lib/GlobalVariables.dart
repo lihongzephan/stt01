@@ -302,6 +302,11 @@ class gv {
     static List<String> listText = [];
     static var aryHomeAIMLResult = [];
     static var timHome = DateTime.now().millisecondsSinceEpoch;
+    static double dblAlignX = 0;
+    static double dblAlignY = 0;
+    static var intLastLeft = 0;
+    static var intLastRight = 0;
+    static var strRBCode = '';
 
     // Var For Login
     static var strLoginID = '';
