@@ -3,7 +3,7 @@ var gbolDebug = true;
 var aryClients = [];
 var fs = require('fs');
 var intHBTimeout = 30000;
-var bolAllowDuplicateLogin = false;
+var bolAllowDuplicateLogin = true;
 
 
 var base64 = require('base-64');
@@ -11,8 +11,13 @@ var utf8 = require('utf8');
 
 
 
+// For wikipedia
+const http = require('https');
+
+
+
 // Bing Image Search
-var BingSubscriptionKey = '676101a4ef5142b08fafc55a453ee539';
+var BingSubscriptionKey = 'b0541b758e434de198f1cc60e02ed865';
 var BingHost = 'api.cognitive.microsoft.com';
 var BingPath = '/bing/v7.0/images/search';
 let httpsBing = require('https');
@@ -195,6 +200,7 @@ socketAll.on('connection', function (socket) {
     // Add Connection to Array with Empty User ID
     aryClients.push({ connectionCode: socket.id, userId: '', lastHB: Date.now(), socket: socket});
 
+
     socket.on('removeClientUserId', function (userid) {
         for (let i = 0; i < aryClients.length; i++) {
             if (aryClients[i].connectionCode === socket.id) {
@@ -264,8 +270,15 @@ socketAll.on('connection', function (socket) {
     });
 
     socket.on('ClientNeedAIML', function (strAIML) {
-        funUpdateServerMonitor("Client Need Python aiml: " + strAIML + ' socketid: ' + socket.id, false);
-        funRequestPythonAIML(strAIML, socket.id);
+        let clientUserId = '';
+        for (let i = 0; i < aryClients.length; i++) {
+            if (aryClients[i].connectionCode === socket.id) {
+                clientUserId = aryClients[i].userId;
+                break;
+            }
+        }
+        funUpdateServerMonitor("Client Need Python aiml: " + strAIML + ' userid: ' + clientUserId, false);
+        funRequestPythonAIML(strAIML, socket.id, clientUserId);
     });
 
     socket.on('RBMoveRobot', function (RBcode,aryRBMoveRobot) {
@@ -799,12 +812,12 @@ function funForgetPWSendEmail(strUsrEmail, result, strLang) {
 var aryAIML = [];
 var gintAIMLCount = 0;
 
-function funRequestPythonAIML(strAIML, socID) {
+function funRequestPythonAIML(strAIML, socID, clientUserId) {
     // Increate Counter
     gintAIMLCount += 1;
 
     // Push into Array
-    aryAIML.push({ count: gintAIMLCount, sockID: socID  });
+    aryAIML.push({ count: gintAIMLCount, sockID: socID, userID: clientUserId  });
     
 
     //strAIML = "你好嗎你好嗎";
@@ -835,18 +848,17 @@ function funRequestPythonAIML(strAIML, socID) {
 }
 
 
-function funAIMLEndRes(intCount, strAnswer) {
+function funAIMLEndRes(idSocket, idUser, strAnswer) {
     // Get Count in Array
-    for (let i = 0; i < aryAIML.length; i++) {
-        if (intCount === aryAIML[i].count) {
-            socketAll.to(`${aryAIML[i].sockID}`).emit('SocketSendAIMLToClient', [strAnswer]);
-            funUpdateServerMonitor("Sent aiml answer to client: " + strAnswer, false);
-
-            aryAIML.splice(i, 1);
+    socketAll.to(`${idSocket}`).emit('SocketSendAIMLToClient', [strAnswer]);
+    funUpdateServerMonitor("Sent aiml answer to client: " + strAnswer, false);
+    for (let x = 0; x < aryClients.length; x++) {
+        if (idUser === aryClients[x].userId) {
+            socketAll.to(`${aryClients[x].connectionCode}`).emit('TtsStart', [strAnswer]);
+            funUpdateServerMonitor("Sent aiml answer to pib: " + strAnswer, false);
             break;
         }
     }
-
 }
 
 function funRBMoveRobot(RBcode,aryRBMoveRobot) {
@@ -957,14 +969,99 @@ function funpyAIMLGotDataFromClient(sock, data) {
             let strAnswer = strAnswerTemp.substring(intTemp + 1);
             funUpdateServerMonitor("pyAIML Answer: " + strAnswer, true);
 
-            //socket.emit('BGBClientToServer', strAnswer);
+            // Get socket id and user id
+            let idSocket = '';
+            let idUser = '';
+            for (let i = 0; i < aryAIML.length; i++) {
+                if (intCount === aryAIML[i].count) {
+                    idSocket = aryAIML[i].sockID;
+                    idUser = aryAIML[i].userID;
+                    aryAIML.splice(i, 1);
+                    break;
+                }
+            }
 
-            funAIMLEndRes(intCount, strAnswer);
+
+            //socket.emit('BGBClientToServer', strAnswer);
+            //strAnswer = funCheckFunInAnswer(intCount,strAnswer);
+            funCheckFunInAnswer(idSocket, idUser, strAnswer);
+            //funAIMLEndRes(intCount, strAnswer);
         } else {
             //
         }
     } catch (err) {
         funUpdateServerMonitor("funpyAIMLGotoDataFromClient Error: " + err, true);
+    }
+}
+
+
+
+function funCheckFunInAnswer(idSocket, idUser, strAns) {
+    // set values
+    let strAnswer = strAns;
+    let funName = '';
+    let aryFunValue = [];
+
+    // Check if there is fun symbol
+    let intTemp = strAnswer.indexOf('<fun>(');
+    if (intTemp != -1) {
+
+        // there is function
+        let intTemp2 = strAnswer.indexOf(')</fun>');
+        strAnswer = strAnswer.substring(6, intTemp2);
+
+        // get function name
+        let intTemp3 = strAnswer.indexOf(',');
+        funName = strAnswer.substring(0, intTemp3);
+        // set answer to a format with all values only
+        strAnswer = strAnswer.substring(intTemp3 + 1);
+
+        // loop and get all values
+        let bolEnd = false;
+        while (bolEnd == false) {
+            let intTemp4 = strAnswer.indexOf(',');
+            if (intTemp4 != -1) {
+                let strValue = strAnswer.substring(0, intTemp4);
+                aryFunValue.push(strValue);
+                strAnswer = strAnswer.substring(intTemp4+1);
+            } else {
+                strAnswer = strAnswer.substring(0);
+                aryFunValue.push(strAnswer);
+                bolEnd = true;
+            }
+        }
+
+        funUpdateServerMonitor('aiml function detected: ' + funName + ', values: ' + aryFunValue[0], false);
+
+        // go to next function to further check the function
+        let aryAIMLFun = [funName, aryFunValue];
+        funCheckAIMLFun(idSocket, idUser, aryAIMLFun);
+    } else {
+        // no functions, return ans
+        funAIMLEndRes(idSocket, idUser, strAns);
+    }
+}
+
+
+
+function funCheckAIMLFun(idSocket, idUser, aryValue) {
+
+    let aryTemp = aryValue;
+    let strFunName = aryTemp[0];
+
+    //funUpdateServerMonitor("1", true);
+
+    if (strFunName == 'bingImg') {
+        // take value out first
+        let strSearchImg = aryTemp[1][0];
+        funBingImageSearch('aimlRequestImg', strSearchImg, [idSocket, idUser]);
+    } else if (strFunName == 'wikiSearch') {
+        // take value out first
+        let strSearchWiki = aryTemp[1][0];
+        funWikiSearch(strSearchWiki, 'aimlRequestWiki', [idSocket, idUser]);
+    } else {
+        // it should be impossible, or else error
+        funUpdateServerMonitor("AIML Error: function name is not found", false);
     }
 }
 
@@ -1013,7 +1110,7 @@ function funZFBValueDB(strValue) {
 
 
 
-function funBingImageSearch() {
+function funBingImageSearch(strCaller, strSearch, aryValues) {
     try {
         let BingRequest_Params = {
             method: 'GET',
@@ -1033,42 +1130,35 @@ function funBingImageSearch() {
             BingResponse.on('end', function () {
                 // funUpdateServerMonitor("Bing Result: " + strBingBody, true);
                 let aryBingBody = JSON.parse(strBingBody);
+                //funUpdateServerMonitor(strBingBody, false);
+                //funUpdateServerMonitor(aryBingBody, false);
+                //funUpdateServerMonitor(aryBingBody.value, false);
+                //funUpdateServerMonitor(aryBingBody.value[0], false);
+
                 let intMax = 10;
+
+                let aryBingImgFinal = [];
 
                 if (aryBingBody.value.length < intMax) {
                     intMax = aryBingBody.value.length;
                 }
 
                 for (let i = 1; i <= intMax; i++) {
-                    // Save Values to SQL
-
-                    // SQL Command Insert
                     try {
-                        let sql = 'INSERT INTO bingimage (bim_str, bim_url_thumbnail, bim_url_original) VALUES (?, ?, ?)';
-                        pool.getConnection(function (err, connection) {
-                            connection.query(sql, [strSearch, aryBingBody.value[i - 1].thumbnailUrl, aryBingBody.value[i - 1].contentUrl], function (err, result) {
-                                if (err) {
-                                    pool.releaseConnection(connection);
-                                    throw err;
-                                } else {
-                                    pool.releaseConnection(connection);
-                                    if (i === intMax) {
-                                        // Here All SQL Inserted, tell client no. of sql inserted
-                                        socket.emit('BingImageSearchReturn', intMax);
-                                    }
-                                }
-                            });
-                        });
-                        //pool.query(sql, [strSearch, aryBingBody.value[i - 1].thumbnailUrl, aryBingBody.value[i - 1].contentUrl], function (err, result) {
-                        //    if (err) throw err;
-                        //    if (i === intMax) {
-                        //        // Here All SQL Inserted, tell client no. of sql inserted
-                        //        socket.emit('BingImageSearchReturn', intMax);
-                        //    }
-                        //});
+                        aryBingImgFinal.push([strSearch, aryBingBody.value[i - 1].thumbnailUrl, aryBingBody.value[i - 1].contentUrl])
                     } catch (err) {
                         funUpdateServerMonitor("Bing Image Add SQL Error: " + err, true);
                     }
+                }
+
+                if (strCaller == 'aimlRequestImg') {
+                    for (let x = 0; x < aryClients.length; x++) {
+                        if (aryValues[1] === aryClients[x].userId && aryClients[x].connectionCode != aryValues[0]) {
+                            socketAll.to(`${aryClients[x].connectionCode}`).emit('ShowImage', aryBingImgFinal);
+                        }
+                    }
+                } else {
+                   // do nothing
                 }
             });
         };
@@ -1079,6 +1169,57 @@ function funBingImageSearch() {
     } catch (err) {
        funUpdateServerMonitor("Bing Image Search Error:" + err, true);
     }
+}
+
+
+
+
+// Following about wikipedia
+function funWikiSearch(strContent, strCaller, aryValues) {
+
+    //https://en.wikipedia.org/w/api.php?format=json&action=query&prop=extracts&exintro&explaintext&redirects=1&titles=Stack%20Overflow
+
+    let strLang = "zh";
+
+    let strAction = 'query';
+    let strProp = 'extracts';
+    let strTitles = strContent;
+    let strFormat = 'json';
+
+    let WikiURL = 'https://' + strLang + '.wikipedia.org/w/api.php?action=' +  strAction + '&titles=' + strTitles + '&format=' + strFormat + '&prop=extracts&exintro&explaintext&redirects=1';
+    WikiURL = encodeURI(WikiURL);
+
+    funUpdateServerMonitor('wiki start search, url: ' + WikiURL, false);
+
+    http.get(WikiURL, (resp) => {
+        let data = '';
+
+        // A chunk of data has been recieved.
+        resp.on('data', (chunk) => {
+            data += chunk;
+        });
+
+        // The whole response has been received. Print out the result.
+        resp.on('end', () => {
+            let parsedData = JSON.parse(data);
+            //console.log(parsedData);
+            //console.log(parsedData.query.pages);
+            //console.log(parsedData["query"]["pages"]);
+            //console.log(Object.keys(parsedData.query.pages)[0]);
+            let extractAns = parsedData["query"]["pages"][Object.keys(parsedData.query.pages)[0]]["extract"];
+            //console.log(extractAns);
+
+            // do sth
+            // Check caller
+            if (strCaller == 'aimlRequestWiki') {
+                funAIMLEndRes(aryValues[0], aryValues[1], extractAns);
+            } else {
+                // do nothing
+            }
+        });
+    }).on("error", (err) => {
+        funUpdateServerMonitor("Wiki Search Error: " + err.message, false);
+    });
 }
 
 
