@@ -547,7 +547,7 @@ class gv {
         await Thread.sleep(intHBInterval);
         if (socket != null) {
           // print('Sending HB...' + DateTime.now().toString());
-          socket.emit('HB', [0]);
+          socket.emit('HB', [strLoginID]);
         }
       }
     } // End of funTimerHeartBeat()

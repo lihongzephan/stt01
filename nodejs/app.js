@@ -9,6 +9,8 @@ var bolAllowDuplicateLogin = true;
 var base64 = require('base-64');
 var utf8 = require('utf8');
 
+var intTTSMax = 256;
+
 
 
 // For wikipedia
@@ -21,6 +23,31 @@ var BingSubscriptionKey = 'b0541b758e434de198f1cc60e02ed865';
 var BingHost = 'api.cognitive.microsoft.com';
 var BingPath = '/bing/v7.0/images/search';
 let httpsBing = require('https');
+
+
+
+// Baidu Ai vars
+var AipOcrClient = require("baidu-aip-sdk").ocr;
+var AipImageClassifyClient = require("baidu-aip-sdk").imageClassify;
+var AipSpeechClient = require("baidu-aip-sdk").speech;
+
+// Baidu Ai vars
+var AipOcrClient = require("baidu-aip-sdk").ocr;
+var AipImageClassifyClient = require("baidu-aip-sdk").imageClassify;
+var AipSpeechClient = require("baidu-aip-sdk").speech;
+
+// 设置APPID/AK/SK
+var BaiduAPP_ID = "14301112";
+var BaiduAPI_KEY = "3Fq5fsenXArjXfaMuInYfhqO";
+var BaiduSECRET_KEY = "Xmw4PIUFtHp8rF9VXaN4Fk5G1tS1c6VV";
+
+// 新建一个对象，建议只保存一个对象调用服务接口
+var clientBaidu = new AipOcrClient(BaiduAPP_ID, BaiduAPI_KEY, BaiduSECRET_KEY);
+var clientBaiduImageClassify = new AipImageClassifyClient(BaiduAPP_ID, BaiduAPI_KEY, BaiduSECRET_KEY);
+var clientSpeech = new AipSpeechClient(BaiduAPP_ID, BaiduAPI_KEY, BaiduSECRET_KEY);
+
+var BaiduTranslateAppID = "20180927000212888";
+var BaiduTranslateAppKey = "YwjB9cJ_L6E8HCCDZKng";
 
 
 // Email Related
@@ -223,11 +250,12 @@ socketAll.on('connection', function (socket) {
     });
 
 
-    socket.on('HB', function (aryTemp) {
+    socket.on('HB', function (strUserID) {
         //funUpdateServerMonitor("Heart Beat from Socket ID: " + socket.id, true);
         for (let i = 0; i < aryClients.length; i++) {
             if (aryClients[i].connectionCode === socket.id) {
                 aryClients[i].lastHB = Date.now();
+                aryClients[i].userId = strUserID;
             }
         }
     });
@@ -287,6 +315,20 @@ socketAll.on('connection', function (socket) {
 
     socket.on('ZFBClientSentValue', function (strValue) {
         funZFBValueDB(strValue);
+    });
+
+    socket.on('PIBRequestPhotoClassify', function (imgB64) {
+        let usrId = '';
+        for (let i = 0; i < aryClients.length; i++) {
+            if (aryClients[i].connectionCode === socket.id) {
+                usrId = aryClients[i].userId;
+                break;
+            }
+        }
+
+        funUpdateServerMonitor('Got pib photo request classify from usrId: ' + usrId);
+
+        funBaiduAIImageClassify(imgB64, 'pibRequestPhoto', [socket.id, usrId]);
     });
 
     // Catch any unexpected error, to avoid system hangs
@@ -850,10 +892,14 @@ function funRequestPythonAIML(strAIML, socID, clientUserId) {
 
 function funAIMLEndRes(idSocket, idUser, strAnswer) {
     // Get Count in Array
-    socketAll.to(`${idSocket}`).emit('SocketSendAIMLToClient', [strAnswer]);
-    funUpdateServerMonitor("Sent aiml answer to client: " + strAnswer, false);
+
+    // Send to client
+    //socketAll.to(`${idSocket}`).emit('SocketSendAIMLToClient', [strAnswer]);
+    //funUpdateServerMonitor("Sent aiml answer to client: " + strAnswer, false);
+
+    // Send to ONE pib
     for (let x = 0; x < aryClients.length; x++) {
-        if (idUser === aryClients[x].userId) {
+        if (idUser === aryClients[x].userId && idSocket != aryClients[x].connectionCode) {
             socketAll.to(`${aryClients[x].connectionCode}`).emit('TtsStart', [strAnswer]);
             funUpdateServerMonitor("Sent aiml answer to pib: " + strAnswer, false);
             break;
@@ -1012,26 +1058,39 @@ function funCheckFunInAnswer(idSocket, idUser, strAns) {
 
         // get function name
         let intTemp3 = strAnswer.indexOf(',');
-        funName = strAnswer.substring(0, intTemp3);
-        // set answer to a format with all values only
-        strAnswer = strAnswer.substring(intTemp3 + 1);
+        if (intTemp3 != -1) {
+            // Has value
 
-        // loop and get all values
-        let bolEnd = false;
-        while (bolEnd == false) {
-            let intTemp4 = strAnswer.indexOf(',');
-            if (intTemp4 != -1) {
-                let strValue = strAnswer.substring(0, intTemp4);
-                aryFunValue.push(strValue);
-                strAnswer = strAnswer.substring(intTemp4+1);
-            } else {
-                strAnswer = strAnswer.substring(0);
-                aryFunValue.push(strAnswer);
-                bolEnd = true;
+            // firstly, get funName
+            funName = strAnswer.substring(0, intTemp3);
+
+            // set answer to a format with all values only
+            strAnswer = strAnswer.substring(intTemp3 + 1);
+
+            // loop and get all values
+            let bolEnd = false;
+            while (bolEnd == false) {
+                let intTemp4 = strAnswer.indexOf(',');
+                if (intTemp4 != -1) {
+                    let strValue = strAnswer.substring(0, intTemp4);
+                    aryFunValue.push(strValue);
+                    strAnswer = strAnswer.substring(intTemp4+1);
+                } else {
+                    strAnswer = strAnswer.substring(0);
+                    aryFunValue.push(strAnswer);
+                    bolEnd = true;
+                }
             }
-        }
 
-        funUpdateServerMonitor('aiml function detected: ' + funName + ', values: ' + aryFunValue[0], false);
+            funUpdateServerMonitor('aiml function detected: ' + funName + ', values: ' + aryFunValue[0], false);
+        } else {
+            // No value
+
+            // Only have to get funName
+            funName = strAnswer;
+
+            funUpdateServerMonitor('aiml function detected: ' + funName + ', values: None', false);
+        }
 
         // go to next function to further check the function
         let aryAIMLFun = [funName, aryFunValue];
@@ -1050,7 +1109,6 @@ function funCheckAIMLFun(idSocket, idUser, aryValue) {
     let strFunName = aryTemp[0];
 
     //funUpdateServerMonitor("1", true);
-
     if (strFunName == 'bingImg') {
         // take value out first
         let strSearchImg = aryTemp[1][0];
@@ -1059,6 +1117,32 @@ function funCheckAIMLFun(idSocket, idUser, aryValue) {
         // take value out first
         let strSearchWiki = aryTemp[1][0];
         funWikiSearch(strSearchWiki, 'aimlRequestWiki', [idSocket, idUser]);
+    } else if (strFunName == 'stopTTS') {
+        for (let x = 0; x < aryClients.length; x++) {
+            if (idUser === aryClients[x].userId && idSocket != aryClients[x].connectionCode) {
+                socketAll.to(`${aryClients[x].connectionCode}`).emit('TtsStop');
+                funUpdateServerMonitor("Sent TTS stop to pib: " + aryClients[x].userId, false);
+                break;
+            }
+        }
+    } else if (strFunName == 'takePhoto') {
+        // call pib take photo
+        for (let x = 0; x < aryClients.length; x++) {
+            if (idUser === aryClients[x].userId && idSocket != aryClients[x].connectionCode) {
+                socketAll.to(`${aryClients[x].connectionCode}`).emit('TakePhoto');
+                funUpdateServerMonitor("Sent Take Photo to pib: " + aryClients[x].userId, false);
+                break;
+            }
+        }
+    } else if (strFunName == 'takePhotoAndClassify') {
+        // call pib take photo
+        for (let x = 0; x < aryClients.length; x++) {
+            if (idUser === aryClients[x].userId && idSocket != aryClients[x].connectionCode) {
+                socketAll.to(`${aryClients[x].connectionCode}`).emit('TakePhotoAndClassify');
+                funUpdateServerMonitor("Sent Take Photo And Classify to pib: " + aryClients[x].userId, false);
+                break;
+            }
+        }
     } else {
         // it should be impossible, or else error
         funUpdateServerMonitor("AIML Error: function name is not found", false);
@@ -1208,6 +1292,15 @@ function funWikiSearch(strContent, strCaller, aryValues) {
             //console.log(Object.keys(parsedData.query.pages)[0]);
             let extractAns = parsedData["query"]["pages"][Object.keys(parsedData.query.pages)[0]]["extract"];
             //console.log(extractAns);
+            try {
+                extractAns = extractAns.substring(0,intTTSMax);
+                if (extractAns.lastIndexOf("。") != -1) {
+                    extractAns = extractAns.substring(0,extractAns.lastIndexOf("。")+1);
+                }
+            } catch (Err) {
+                extractAns = "我沒有" + strContent + "的资料";
+            }
+
 
             // do sth
             // Check caller
@@ -1220,6 +1313,138 @@ function funWikiSearch(strContent, strCaller, aryValues) {
     }).on("error", (err) => {
         funUpdateServerMonitor("Wiki Search Error: " + err.message, false);
     });
+}
+
+
+
+// Baidu Functions
+
+// Image Classify
+function funBaiduAIImageClassify(imgB64, strCaller, aryValues) {
+    try {
+        clientBaiduImageClassify.advancedGeneral(imgB64).then(function (result) {
+            //socket.emit('BaiduAIImageClassifyReturn', result);
+            let strResult = result;
+
+            funUpdateServerMonitor("BaiduAIImageClassify Result: " + JSON.stringify(strResult), true);
+
+            strResult = funBaiduAIImageClassifyReturn(strResult);
+
+            // Check caller
+            switch (strCaller) {
+                case 'pibRequestPhoto':
+                    for (let x = 0; x < aryClients.length; x++) {
+                        if (aryValues[1] === aryClients[x].userId && aryValues[0] == aryClients[x].connectionCode) {
+                            socketAll.to(`${aryClients[x].connectionCode}`).emit('TtsStart', [strResult]);
+                            funUpdateServerMonitor("Sent aiml answer to pib: " + strResult, false);
+                            break;
+                        }
+                    }
+                    break;
+                default:
+                    funUpdateServerMonitor("BaiduAIImageClassify Error: Cannot find function caller", true);
+            }
+        }).catch(function (err) {
+            // 如果发生网络错误
+            funUpdateServerMonitor("BaiduAIImageClassify Error: " + err, true);
+        });
+    } catch (err) {
+        funUpdateServerMonitor("BaiduAIImageClassify Error:" + err, true);
+    }
+}
+
+
+
+function funBaiduAIImageClassifyReturn(strResult) {
+    try {
+        // showDebug(json_encode(strResult), 3000);
+
+        // Get Result Num
+        let intResult = 0;
+        let strTemp = "";
+        let i;
+
+        let strAnswer = '我不知道这是什么';
+
+        intResult = strResult.result_num;
+        if (intResult !== 0) {
+            // Check For Company Logo First
+            let bolLogo = false;
+            let strLogo = "";
+            for (i = 0; i < strResult.result_num; i++) {
+                if (strResult.result[i].score > 0.5 && strResult.result[i].root === "Logo") {
+                    bolLogo = true;
+                    strLogo = strResult.result[i].keyword;
+                    break;
+                }
+            }
+            if (bolLogo) {
+                strTemp = strLogo;
+                if (strTemp.indexOf("三星") >= 0) {
+                    strTemp = '三星公司，全球最佳手机生产商';
+                } else if (strTemp.indexOf("苹果") >= 0) {
+                    strTemp = '苹果公司，全球最贵手机生产商';
+                }
+                strAnswer = strTemp;
+            } else {
+                // Probably Not a Company Logo
+                if (strResult.result[0].score > 0.3) {
+                    strTemp += strResult.result[0].keyword;
+
+                    // Handle Special Situation
+
+                    switch (strTemp) {
+                        case "轿车":
+                            // For Car
+                            if (intResult > 1) {
+                                if (strResult.result[1].score > 0.3 && strResult.result[1].keyword.indexOf("货车") >= 0) {
+                                    strTemp = '货车';
+                                } else {
+                                    if (gstrLang === "TC") {
+                                        strTemp = '私家车';
+                                    }
+                                }
+                            } else {
+                                if (gstrLang === "TC") {
+                                    strTemp = '私家车';
+                                }
+                            }
+                            break;
+                        case "自行车":
+                            // For Bicycle
+                            if (gstrLang === "TC") {
+                                strTemp = '单车';
+                            }
+                            break;
+                        case "三星标志":
+                            strTemp = '三星公司，全球最佳手机生产商';
+                            break;
+                        case "苹果":
+                            let bolAppleLogo = false;
+                            for (i = 0; i < strResult.result.length; i++) {
+                                if (strResult.result[i].keyword.indexOf("苹果商标") >= 0) {
+                                    bolAppleLogo = true;
+                                    break;
+                                }
+                            }
+                            if (bolAppleLogo) {
+                                strTemp = '苹果公司，全球最贵手机生产商';
+                            }
+                            break;
+                    }
+                    strAnswer = '这是' + strTemp;
+                } else {
+                    strAnswer = '我不知道这是什么';
+                }
+            }
+        } else {
+            strAnswer = '我不知道这是什么'
+        }
+
+        return strAnswer;
+    } catch (err) {
+        //
+    }
 }
 
 

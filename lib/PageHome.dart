@@ -181,6 +181,16 @@ class ClsHome extends StatelessWidget {
     );
   }
 
+
+  Widget STTBody() {
+    if (gv.listText.length != 0) {
+      return Text(gv.listText.length.toString() + ': ' + gv.listText[gv.listText.length-1]);
+    } else {
+      return Text("Nothing Yet");
+    }
+  }
+
+
   var ctlRBCode = new TextEditingController();
 
   Widget Body() {
@@ -282,15 +292,16 @@ class ClsHome extends StatelessWidget {
                     height: sv.dblBodyHeight / 6,
                     // width: sv.dblScreenWidth / 2,
                     child: Center(
-                      child: ListView.builder(
-                          shrinkWrap: true,
-                          reverse: true,
-                          itemCount: gv.listText.length,
-                          itemBuilder: (context, index) {
-                            return Text((index + 1).toString() +
-                                ': ' +
-                                gv.listText[index]);
-                          }),
+                      child: STTBody(),
+//                      child: ListView.builder(
+//                          shrinkWrap: true,
+//                          reverse: true,
+//                          itemCount: gv.listText.length,
+//                          itemBuilder: (context, index) {
+//                            return Text((index + 1).toString() +
+//                                ': ' +
+//                                gv.listText[index]);
+//                          }),
                     ),
                   ),
                   Text(' '),
