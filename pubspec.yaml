@@ -29,6 +29,7 @@ dependencies:
   flutter_redux:
   flutter_tts: ^0.2.3
   connectivity:
+  flutter_webrtc: 0.1.5
 
 dev_dependencies:
   flutter_test:

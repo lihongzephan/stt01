@@ -9,12 +9,14 @@ import 'package:speech_recognition/speech_recognition.dart';
 import 'package:flutter/services.dart';
 import 'package:simple_permissions/simple_permissions.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:flutter_webrtc/webrtc.dart';
 
 // Import Self Darts
 import 'LangStrings.dart';
 import 'ScreenVariables.dart';
 import 'GlobalVariables.dart';
 import 'Utilities.dart';
+import 'signaling.dart';
 
 // Import Pages
 import 'BottomBar.dart';
@@ -39,74 +41,207 @@ class Language {
 enum TtsState { playing, stopped }
 
 // Home Page
-class ClsHome extends StatelessWidget {
+class ClsHomeBase extends StatelessWidget {
   final intState;
 
-  ClsHome(this.intState);
+  ClsHomeBase(this.intState);
 
-  //@override
-  //_ClsHomeState createState() => _ClsHomeState();
-//}
+  @override
+  Widget build(BuildContext context) {
+    return ClsHome();
+  }
+}
 
-//class _ClsHomeState extends State<ClsHome> {
-//  SpeechRecognition _speech;
-//
-//  bool _speechRecognitionAvailable = false;
-//  bool _isListening = false;
-//
-//  String transcription = '';
-//
-//  //String _currentLocale = 'en_US';
-//  Language selectedLang = languages.first;
-//
-//
-//
-//  @override
-//  initState() {
-//    super.initState();
-//    activateSpeechRecognizer();
-//  }
-//
-//
-//  void activateSpeechRecognizer() {
-//    print('_MyAppState.activateSpeechRecognizer... ');
-//    _speech = new SpeechRecognition();
-//    _speech.setAvailabilityHandler(onSpeechAvailability);
-//    _speech.setCurrentLocaleHandler(onCurrentLocale);
-//    _speech.setRecognitionStartedHandler(onRecognitionStarted);
-//    _speech.setRecognitionResultHandler(onRecognitionResult);
-//    _speech.setRecognitionCompleteHandler(onRecognitionComplete);
-//    //_speech.setErrorHandler(errorHandler);
-//    _speech
-//        .activate()
-//        .then((res) => setState(() => _speechRecognitionAvailable = res));
-//  }
+
+class ClsHome extends StatefulWidget {
+  @override
+  _ClsHomeState createState() => _ClsHomeState();
+}
+
+class _ClsHomeState extends State<ClsHome> {
+
+//  int intCountState = 0;
+
+
+
+  // Vars
+  var ctlRBCode = new TextEditingController();
+
+  Signaling _signaling;
+  RTCVideoRenderer _localRenderer = new RTCVideoRenderer();
+  RTCVideoRenderer _remoteRenderer = new RTCVideoRenderer();
+
+
+
+  @override
+  initState() {
+    super.initState();
+//    intCountState += 1;
+    if (gv.bolWebRtcShouldInit) {
+      initRenderers();
+      _connect();
+      Future.delayed(Duration(milliseconds:  1000), () {
+        funWebRTCBtnPressed();
+      });
+    } else {
+      Future.delayed(Duration(milliseconds:  1000), () {
+        funHomeInputAudio();
+      });
+    }
+  }
+
+
+
+  @override
+  deactivate() {
+    super.deactivate();
+
+    funDisposeWebRTC();
+  }
+
+  void funDisposeWebRTC() {
+    try {
+      if (_signaling != null) _signaling.close();
+    } catch (Err) {
+      print("_signaling.close() Error:" + Err.toString());
+    }
+    try {
+      _localRenderer.dispose();
+    } catch (Err) {
+      print("_localRenderer.dispose() Error:" + Err.toString());
+    }
+    try {
+      _remoteRenderer.dispose();
+    } catch (Err) {
+      print("_remoteRenderer.dispose() Error:" + Err.toString());
+    }
+  }
+
+
+
+  initRenderers() async {
+    await _localRenderer.initialize();
+    await _remoteRenderer.initialize();
+  }
+
+  void _connect() async {
+    if (_signaling == null) {
+      _signaling = new Signaling(gv.rtcServerIP, gv.rtcDisplayName)
+        ..connect();
+
+      _signaling.onStateChange = (SignalingState state) {
+        switch (state) {
+          case SignalingState.CallStateNew:
+            this.setState(() {
+              gv.rtcInCalling = true;
+            });
+            break;
+          case SignalingState.CallStateBye:
+            this.setState(() {
+              _localRenderer.srcObject = null;
+              _remoteRenderer.srcObject = null;
+              gv.rtcInCalling = false;
+            });
+            break;
+          case SignalingState.CallStateInvite:
+          case SignalingState.CallStateConnected:
+          case SignalingState.CallStateRinging:
+          case SignalingState.ConnectionClosed:
+          case SignalingState.ConnectionError:
+          case SignalingState.ConnectionOpen:
+            break;
+        }
+      };
+
+      _signaling.onPeersUpdate = ((event) {
+        this.setState(() {
+          gv.rtcSelfId = event['self'];
+          gv.rtcPeers = event['peers'];
+        });
+      });
+
+      _signaling.onLocalStream = ((stream) {
+        _localRenderer.srcObject = stream;
+        this.setState(() {
+        });
+      });
+
+      _signaling.onAddRemoteStream = ((stream) {
+        _remoteRenderer.srcObject = stream;
+        this.setState(() {
+        });
+      });
+
+      _signaling.onRemoveRemoteStream = ((stream) {
+        _remoteRenderer.srcObject = null;
+        this.setState(() {
+        });
+      });
+    }
+  }
+
+  _invitePeer(context, peerId, use_screen) async {
+    if (_signaling != null && peerId != gv.rtcSelfId) {
+      _signaling.invite(peerId, 'video', use_screen);
+    }
+  }
+
+  _hangUp() {
+    if (_signaling != null) {
+      _signaling.bye();
+    }
+  }
+
+  _switchCamera() {
+    _signaling.switchCamera();
+  }
+
+
 
   void funHomeInputAudio() {
-    //ut.showToast(listText[listText.length - 1], true);
-    //gv.listText.add(gv.listText.length.toString());
-    //gv.storeHome.dispatch(Actions.Increment);
-    //_speechRecognitionAvailable &&
-    if (!gv.sttIsListening) {
-      // Start Record
-      //gv.bolPressedRecord = false;
-      //start();
-      gv.sttStart();
-    } else if (gv.sttIsListening) {
-      // Cancel Record
-      //gv.bolPressedRecord = true;
-      //stop();
-      gv.sttCancel();
+    if (gv.bolWebRtcShouldInit) {
+      gv.bolWebRtcShouldInit = false;
+      _hangUp();
+      gv.storeMain.dispatch(Actions.Increment);
+      funHomeInputAudio();
     } else {
-      // do nothing, it should be impossible
+      if (!gv.sttIsListening) {
+        // Start Record
+        gv.sttStart();
+      } else {
+        // Cancel Record
+        gv.sttCancel();
+      }
     }
-//    if (_speechRecognitionAvailable && !_isListening) {
-//      start();
-//    }
-//    if (_isListening) {
-//      stop();
-//    }
   }
+
+
+
+  void funWebRTCBtnPressed() {
+    try {
+      if (gv.bolWebRtcShouldInit) {
+        if (gv.rtcInCalling) {
+          _hangUp();
+        } else {
+          var i = 0;
+          for (i = 0; i < gv.rtcPeers.length; i++) {
+            if (gv.rtcPeers[i]['id'] != gv.rtcSelfId) {
+              _invitePeer(context, gv.rtcPeers[i]['id'], false);
+            }
+          }
+        }
+      } else {
+        gv.bolWebRtcShouldInit = true;
+        gv.sttCancel();
+        gv.storeMain.dispatch(Actions.Increment);
+        funWebRTCBtnPressed();
+      }
+    } catch (Err) {
+      //
+    }
+  }
+
+
 
   void funCheckJoyStick() {
     int x = (gv.dblAlignX * 10).toInt();
@@ -153,7 +288,10 @@ class ClsHome extends StatelessWidget {
     //print(intLeft.toString() + ' , ' + intRight.toString());
     // Socket emit
     if (intLeft != gv.intLastLeft || intRight != gv.intLastRight) {
-      gv.socket.emit('RBMoveRobot', [ctlRBCode.text, ['F', intLeft, intRight, 0]]);
+      gv.socket.emit('RBMoveRobot', [
+        ctlRBCode.text,
+        ['F', intLeft, intRight, 0]
+      ]);
       gv.intLastLeft = intLeft;
       gv.intLastRight = intRight;
     }
@@ -182,16 +320,40 @@ class ClsHome extends StatelessWidget {
   }
 
 
+
   Widget STTBody() {
     if (gv.listText.length != 0) {
-      return Text(gv.listText.length.toString() + ': ' + gv.listText[gv.listText.length-1]);
+      return Text(gv.listText.length.toString() +
+          ': ' +
+          gv.listText[gv.listText.length - 1]);
     } else {
       return Text("Nothing Yet");
     }
   }
 
 
-  var ctlRBCode = new TextEditingController();
+
+  Widget WebRTCActivateButton() {
+    var text = '✓';
+    var color = Colors.greenAccent;
+    if (gv.rtcInCalling) {
+      text = '✓';
+      color = Colors.greenAccent;
+    } else {
+      text = 'X';
+      color = Colors.redAccent;
+    }
+    return RaisedButton(
+      shape: new RoundedRectangleBorder(
+          borderRadius: new BorderRadius.circular(sv.dblDefaultRoundRadius)),
+      textColor: Colors.white,
+      color: color,
+      onPressed: () => funWebRTCBtnPressed(),
+      child: Text(text, style: TextStyle(fontSize: sv.dblDefaultFontSize * 1)),
+    );
+  }
+
+
 
   Widget Body() {
     ctlRBCode.text = gv.strRBCode;
@@ -204,7 +366,23 @@ class ClsHome extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             Container(
-              height: sv.dblBodyHeight / 2,
+                width: sv.dblScreenWidth,
+                height: sv.dblBodyHeight / 3,
+                child: new RTCVideoView(_remoteRenderer)
+            ),
+            Text(' '),
+            Container(
+              width: sv.dblScreenWidth,
+              child: Center(
+                child: SizedBox(
+                  height: sv.dblDefaultFontSize * 2.5,
+                  width: sv.dblDefaultFontSize * 2.5,
+                  child: WebRTCActivateButton(),
+                ),
+              ),
+            ),
+            Container(
+              height: sv.dblBodyHeight / 3,
               width: sv.dblScreenWidth,
               child: Align(
                 alignment: Alignment(gv.dblAlignX, gv.dblAlignY),
@@ -218,14 +396,14 @@ class ClsHome extends StatelessWidget {
                       gv.dblAlignX = (dragDetails2.globalPosition.dx * 2 -
                               sv.dblScreenWidth) /
                           sv.dblScreenWidth;
-                      gv.dblAlignY =
-                          ((dragDetails2.globalPosition.dy - sv.dblTopHeight * 1.5) *
-                                      2 -
-                                  sv.dblScreenHeight / 2) /
-                              sv.dblScreenHeight *
-                              2;
+                      //gv.dblAlignY = ((dragDetails2.globalPosition.dy - sv.dblTopHeight * 1.5) * 2 - sv.dblScreenHeight / 2) / sv.dblScreenHeight * 2;
+                      gv.dblAlignY = ((dragDetails2.globalPosition.dy - sv.dblBodyHeight / 3 * 2 + sv.dblDefaultFontSize * 3) / (sv.dblBodyHeight / 3) - 0.5) * 2;
+                      //print(gv.dblAlignY);
                       if (gv.dblAlignY > 1) {
                         gv.dblAlignY = 1;
+                      }
+                      if (gv.dblAlignY < -1) {
+                        gv.dblAlignY = -1;
                       }
                       gv.storeHome.dispatch(Actions.Increment);
                       funCheckJoyStick();
@@ -272,7 +450,7 @@ class ClsHome extends StatelessWidget {
                     decoration: InputDecoration(
                       hintText: 'RB Code',
                       contentPadding:
-                      EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+                          EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(32.0)),
                     ),
@@ -281,15 +459,14 @@ class ClsHome extends StatelessWidget {
                 Text(ut.Space(sv.gintSpaceTextField)),
               ],
             ),
+            Text(' '),
             Container(
-              height: sv.dblBodyHeight / 3,
               width: sv.dblScreenWidth,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
                   Container(
-                    height: sv.dblBodyHeight / 6,
                     // width: sv.dblScreenWidth / 2,
                     child: Center(
                       child: STTBody(),
@@ -325,12 +502,24 @@ class ClsHome extends StatelessWidget {
     );
   }
 
+
+
+//  void funInitFirstTime() {
+//    // WebRTC
+//    if (gv.rtcSelfId == '') {
+//      initRenderers();
+//      _connect();
+//    }
+//  }
+
+
+
   @override
   Widget build(BuildContext context) {
-//    if (gv.bolHomeFirstIn) {
-//      gv.bolHomeFirstIn = false;
-//      //activateSpeechRecognizer();
-//      gv.storeHome.dispatch(Actions.Increment);
+
+//    if (intCountState == 1) {
+//      intCountState += 1;
+//      funInitFirstTime();
 //    }
 
     return Scaffold(

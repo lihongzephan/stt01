@@ -3,6 +3,7 @@
 // Import Flutter Darts
 import 'dart:io';
 import 'dart:convert';
+import 'dart:core';
 import 'package:adhara_socket_io/adhara_socket_io.dart';
 import 'package:connectivity/connectivity.dart';
 import 'package:flutter/material.dart';
@@ -11,11 +12,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:threading/threading.dart';
 import 'package:speech_recognition/speech_recognition.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:flutter_webrtc/webrtc.dart';
 
 // Import Self Darts
 import 'LangStrings.dart';
 import 'Utilities.dart';
 import 'PageHome.dart';
+import 'signaling.dart';
 
 // Import Pages
 
@@ -30,6 +33,11 @@ int reducerRedux(int intSomeInteger, dynamic action) {
 }
 
 enum TtsState { playing, stopped }
+
+enum DialogDemoAction {
+  cancel,
+  connect,
+}
 
 // class for stt
 class sttLanguage {
@@ -81,7 +89,10 @@ class gv {
   // Declare STORE here for Redux
 
   // Store for SettingsMain
-  static Store<int> storeHome = new Store<int>(reducerRedux, initialState: 0);
+  static Store<int> storeMain =
+      new Store<int>(reducerRedux, initialState: 0);
+  static Store<int> storeHome =
+      new Store<int>(reducerRedux, initialState: 0);
   static Store<int> storeSettingsMain =
       new Store<int>(reducerRedux, initialState: 0);
   static Store<int> storePerInfo =
@@ -116,14 +127,7 @@ class gv {
     }
 
     // Init for STT
-    print('_MyAppState.activateSpeechRecognizer... ');
-    sttSpeech = new SpeechRecognition();
-    sttSpeech.setAvailabilityHandler(sttOnSpeechAvailability);
-    sttSpeech.setCurrentLocaleHandler(sttOnCurrentLocale);
-    sttSpeech.setRecognitionStartedHandler(sttOnRecognitionStarted);
-    sttSpeech.setRecognitionResultHandler(sttOnRecognitionResult);
-    sttSpeech.setRecognitionCompleteHandler(sttOnRecognitionComplete);
-    sttSpeech.activate().then((res) => sttSpeechRecognitionAvailable = res);
+    sttInit();
   }
 
   // Functions for TTS
@@ -213,8 +217,23 @@ class gv {
   //String _currentLocale = 'en_US';
   static Language sttSelectedLang = languages.first;
 
+  static void sttInit() {
+    print('_MyAppState.activateSpeechRecognizer... ');
+    sttSpeech = new SpeechRecognition();
+    sttSpeech.setAvailabilityHandler(sttOnSpeechAvailability);
+    sttSpeech.setCurrentLocaleHandler(sttOnCurrentLocale);
+    sttSpeech.setRecognitionStartedHandler(sttOnRecognitionStarted);
+    sttSpeech.setRecognitionResultHandler(sttOnRecognitionResult);
+    sttSpeech.setRecognitionCompleteHandler(sttOnRecognitionComplete);
+    sttSpeech.activate().then((res) => sttSpeechRecognitionAvailable = res);
+  }
+
   static void sttStart() {
-     sttSpeech.listen(locale: sttSelectedLang.code).then((result) {});
+    if (!sttSpeechRecognitionAvailable) {
+      sttInit();
+    }
+
+    sttSpeech.listen(locale: sttSelectedLang.code).then((result) {});
   }
 
   static void sttCancel() {
@@ -280,6 +299,16 @@ class gv {
       sttIsListening = false;
     }
 
+
+
+    // Web RTC Vars
+    static String rtcDisplayName = "STT01";
+    static List<dynamic> rtcPeers;
+    static var rtcSelfId = '';
+    static bool rtcInCalling = false;
+    static String rtcServerIP = "192.168.123.5";
+
+
     // Vars For Pages
 
     // Var For Activate
@@ -307,6 +336,7 @@ class gv {
     static var intLastLeft = 0;
     static var intLastRight = 0;
     static var strRBCode = '';
+    static bool bolWebRtcShouldInit = true;
 
     // Var For Login
     static var strLoginID = '';
