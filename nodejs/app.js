@@ -225,7 +225,7 @@ socketAll.on('connection', function (socket) {
     // socket.emit("UpdateYourSocketID", socket.id);
 
     // Add Connection to Array with Empty User ID
-    aryClients.push({ connectionCode: socket.id, userId: '', lastHB: Date.now(), socket: socket});
+    aryClients.push({ connectionCode: socket.id, userId: '', lastHB: Date.now(), socket: socket, webRtcId: ''});
 
 
     socket.on('removeClientUserId', function (userid) {
@@ -250,12 +250,13 @@ socketAll.on('connection', function (socket) {
     });
 
 
-    socket.on('HB', function (strUserID) {
+    socket.on('HB', function (strUserID, strWebRtcId) {
         //funUpdateServerMonitor("Heart Beat from Socket ID: " + socket.id, true);
         for (let i = 0; i < aryClients.length; i++) {
             if (aryClients[i].connectionCode === socket.id) {
                 aryClients[i].lastHB = Date.now();
                 aryClients[i].userId = strUserID;
+                aryClients[i].webRtcId = strWebRtcId;
             }
         }
     });
@@ -329,6 +330,21 @@ socketAll.on('connection', function (socket) {
         funUpdateServerMonitor('Got pib photo request classify from usrId: ' + usrId);
 
         funBaiduAIImageClassify(imgB64, 'pibRequestPhoto', [socket.id, usrId]);
+    });
+
+    socket.on('SttRequestPibWebRtc', function (strUserID) {
+        let webRtcId = '';
+
+        for (let x = 0; x < aryClients.length; x++) {
+            if (aryClients[x].userId === strUserID && aryClients[x].connectionCode != socket.id) {
+                webRtcId = aryClients[x].webRtcId;
+                break;
+            }
+        }
+
+        socketAll.emit("ServerSendPibWenRtcToStt", [webRtcId]);
+
+        funUpdateServerMonitor('Sent Pib Web Rtc id to stt: ' + webRtcId);
     });
 
     // Catch any unexpected error, to avoid system hangs

@@ -12,7 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:threading/threading.dart';
 import 'package:speech_recognition/speech_recognition.dart';
 import 'package:flutter_tts/flutter_tts.dart';
-import 'package:flutter_webrtc/webrtc.dart';
+// import 'package:flutter_webrtc/webrtc.dart';
 
 // Import Self Darts
 import 'LangStrings.dart';
@@ -218,42 +218,57 @@ class gv {
   static Language sttSelectedLang = languages.first;
 
   static void sttInit() {
-    print('_MyAppState.activateSpeechRecognizer... ');
-    sttSpeech = new SpeechRecognition();
-    sttSpeech.setAvailabilityHandler(sttOnSpeechAvailability);
-    sttSpeech.setCurrentLocaleHandler(sttOnCurrentLocale);
-    sttSpeech.setRecognitionStartedHandler(sttOnRecognitionStarted);
-    sttSpeech.setRecognitionResultHandler(sttOnRecognitionResult);
-    sttSpeech.setRecognitionCompleteHandler(sttOnRecognitionComplete);
-    sttSpeech.activate().then((res) => sttSpeechRecognitionAvailable = res);
+    try {
+      print('_MyAppState.activateSpeechRecognizer... ');
+      sttSpeech = new SpeechRecognition();
+      sttSpeech.setAvailabilityHandler(sttOnSpeechAvailability);
+      sttSpeech.setCurrentLocaleHandler(sttOnCurrentLocale);
+      sttSpeech.setRecognitionStartedHandler(sttOnRecognitionStarted);
+      sttSpeech.setRecognitionResultHandler(sttOnRecognitionResult);
+      sttSpeech.setRecognitionCompleteHandler(sttOnRecognitionComplete);
+      sttSpeech.activate().then((res) => sttSpeechRecognitionAvailable = res);
+    } catch (err) {
+      ut.funDebug('stt Init error: ' + err.toString());
+    }
   }
 
   static void sttStart() {
-    if (!sttSpeechRecognitionAvailable) {
-      sttInit();
+    try {
+      if (!sttSpeechRecognitionAvailable) {
+        sttInit();
+      }
+      sttSpeech.listen(locale: sttSelectedLang.code).then((result) {});
+    } catch (err) {
+      ut.funDebug('stt Start error: ' + err.toString());
     }
-
-    sttSpeech.listen(locale: sttSelectedLang.code).then((result) {});
   }
 
   static void sttCancel() {
-    sttSpeech.cancel().then((result) {
-      sttIsListening = false;
+    try {
+      sttSpeech.cancel().then((result) {
+        sttIsListening = false;
 
-      switch(gstrCurPage) {
-        case 'Home':
-          gv.storeHome.dispatch(Actions.Increment);
-          break;
-        default:
-          break;
-      }
-    });
+        switch(gstrCurPage) {
+          case 'Home':
+            gv.storeHome.dispatch(Actions.Increment);
+            break;
+          default:
+            break;
+        }
+      });
+    } catch (err) {
+      ut.funDebug('stt Cancel error: ' + err.toString());
+    }
   }
 
   static void sttStop() {
-    sttSpeech.stop().then((result) {
-      sttIsListening = false;
-    });
+    try {
+      sttSpeech.stop().then((result) {
+        sttIsListening = false;
+      });
+    } catch (err) {
+      ut.funDebug('stt Stop error: ' + err.toString());
+    }
   }
 
   static void sttOnSpeechAvailability(bool result) =>
@@ -265,38 +280,51 @@ class gv {
   }
 
   static void sttOnRecognitionStarted() {
-    sttIsListening = true;
-
-    switch(gstrCurPage) {
-      case 'Home':
-        gv.storeHome.dispatch(Actions.Increment);
-        break;
-      default:
-        break;
-    }
-  }
-
-    static void sttOnRecognitionResult(String text) {
-      sttTranscription = text;
+    try {
+      sttIsListening = true;
 
       switch(gstrCurPage) {
         case 'Home':
-          sttCancel();
-          gv.listText.add(sttTranscription);
-          print('listText: ' + gv.listText[0]);
-          print('length: ' + gv.listText.length.toString());
           gv.storeHome.dispatch(Actions.Increment);
-          gv.timHome = DateTime.now().millisecondsSinceEpoch;
-          print('sent text: ' + text);
-          gv.socket.emit('ClientNeedAIML', [text]);
           break;
         default:
           break;
       }
+    } catch (err) {
+      ut.funDebug('stt OnRecognitionStarted() error: ' + err.toString());
+    }
+  }
+
+    static void sttOnRecognitionResult(String text) {
+      try {
+        sttTranscription = text;
+
+        switch(gstrCurPage) {
+          case 'Home':
+            sttCancel();
+            gv.listText.add(sttTranscription);
+            print('listText: ' + gv.listText[0]);
+            print('length: ' + gv.listText.length.toString());
+            gv.storeHome.dispatch(Actions.Increment);
+            gv.timHome = DateTime.now().millisecondsSinceEpoch;
+            print('sent text: ' + text);
+            gv.socket.emit('ClientNeedAIML', [text]);
+            break;
+          default:
+            break;
+        }
+      } catch (err) {
+        ut.funDebug('stt OnRecognitionResult error: ' + err.toString());
+      }
     }
 
     static void sttOnRecognitionComplete() {
-      sttIsListening = false;
+      try {
+        sttIsListening = false;
+      } catch (err) {
+        ut.funDebug('stt OnRecognitionComplete error: ' + err.toString());
+      }
+
     }
 
 
@@ -307,6 +335,8 @@ class gv {
     static var rtcSelfId = '';
     static bool rtcInCalling = false;
     static String rtcServerIP = "192.168.123.5";
+    static var rtcPerrId = '';
+    static var timGetWRTCId = DateTime.now().millisecondsSinceEpoch;
 
 
     // Vars For Pages
@@ -337,6 +367,8 @@ class gv {
     static var intLastRight = 0;
     static var strRBCode = '';
     static bool bolWebRtcShouldInit = true;
+    static bool bolCanPressWebRtc = true;
+    static bool bolHomeHavePibWebRtcId = false;
 
     // Var For Login
     static var strLoginID = '';
@@ -386,7 +418,7 @@ class gv {
           // Check Login Again if strLoginID != ''
           if (strLoginID != '') {
             timLogin = DateTime.now().millisecondsSinceEpoch;
-            socket.emit('LoginToServer', [strLoginID, strLoginPW, false]);
+            socket.emit('LoginToServer', []);
           }
         }
       });
@@ -562,6 +594,20 @@ class gv {
         ttsNewVoiceText = aryHomeAIMLResult[0];
         ttsSpeak();
       });
+
+
+      socket.on('ServerSendPibWenRtcToStt', (data) {
+        switch (gstrCurPage) {
+          case 'Home':
+            rtcPerrId = data[0];
+            ut.funDebug('Got pib web rtc id from server: ' + rtcPerrId);
+            break;
+          default:
+            break;
+        }
+      });
+
+
 
       // Connect Socket
       socket.connect();
