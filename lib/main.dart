@@ -19,6 +19,7 @@ import 'PagePersonalInformation.dart';
 import 'PageRegister.dart';
 import 'PageSelectLanguage.dart';
 import 'PageSettingsMain.dart';
+import 'Utilities.dart';
 
 // Main Program
 Future <void> main() async {
@@ -42,6 +43,11 @@ Future <void> main2() async {
   gv.gstrLang = gv.getString('strLang');
   gv.strLoginID = gv.getString('strLoginID');
   gv.strLoginPW = gv.getString('strLoginPW');
+  ut.funDebug('Lang: ' + gv.gstrLang);
+  ut.funDebug('User ID: ' + gv.strLoginID);
+  ut.funDebug('User PW: ' + gv.strLoginPW);
+
+
   if (gv.gstrLang != '') {
     // Set Current Language
     ls.setLang(gv.gstrLang);
@@ -50,8 +56,12 @@ Future <void> main2() async {
     gv.gstrCurPage = 'SettingsMain';
     gv.gstrLastPage = 'SettingsMain';
   } else {
+    ut.funDebug('First Time Use');
+
     // First Time Use, set Current Language to English
     ls.setLang('EN');
+    gv.gstrCurPage = 'SelectLanguage';
+    gv.gstrLastPage = 'SelectLanguage';
   }
 
   // Init socket.io

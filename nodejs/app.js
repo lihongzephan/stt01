@@ -9,7 +9,7 @@ var bolAllowDuplicateLogin = true;
 var base64 = require('base-64');
 var utf8 = require('utf8');
 
-var intTTSMax = 256;
+var intTTSCHMax = 256;
 
 
 
@@ -203,7 +203,7 @@ funUpdateConsole('RB Socket.IO Server running at port 10533', false);
 function funShowClients() {
     for (let i = 0; i < aryClients.length; i++) {
         try {
-            funUpdateServerMonitor("Connection Code: " + aryClients[i].connectionCode + "&nbsp;&nbsp;&nbsp;User ID: " + aryClients[i].userId, true);
+            funUpdateServerMonitor("Connection Code: " + aryClients[i].connectionCode + "&nbsp;&nbsp;&nbsp;User ID: " + aryClients[i].userId + "&nbsp;&nbsp;&nbsp;WebRTC Id: " + aryClients[i].webRtcId, true);
         } catch (err) {
             //
         }
@@ -251,7 +251,8 @@ socketAll.on('connection', function (socket) {
 
 
     socket.on('HB', function (strUserID, strWebRtcId) {
-        //funUpdateServerMonitor("Heart Beat from Socket ID: " + socket.id, true);
+        funUpdateServerMonitor("Heart Beat from Socket ID: " + socket.id, true);
+        //funUpdateServerMonitor("HB webRtcId: " + strWebRtcId, true);
         for (let i = 0; i < aryClients.length; i++) {
             if (aryClients[i].connectionCode === socket.id) {
                 aryClients[i].lastHB = Date.now();
@@ -259,6 +260,9 @@ socketAll.on('connection', function (socket) {
                 aryClients[i].webRtcId = strWebRtcId;
             }
         }
+
+        // HB Return
+        socketAll.emit('HBReturn');
     });
 
 
@@ -298,7 +302,7 @@ socketAll.on('connection', function (socket) {
         funForgetPassword(strUsrEmail, socket.id, strLang);
     });
 
-    socket.on('ClientNeedAIML', function (strAIML) {
+    socket.on('ClientNeedAIML', function (strAIML, strLang) {
         let clientUserId = '';
         for (let i = 0; i < aryClients.length; i++) {
             if (aryClients[i].connectionCode === socket.id) {
@@ -306,8 +310,8 @@ socketAll.on('connection', function (socket) {
                 break;
             }
         }
-        funUpdateServerMonitor("Client Need Python aiml: " + strAIML + ' userid: ' + clientUserId, false);
-        funRequestPythonAIML(strAIML, socket.id, clientUserId);
+        funUpdateServerMonitor("Client Need Python aiml: " + strAIML + ' userid: ' + clientUserId + ' strLang: ' + strLang, false);
+        funRequestPythonAIML(strAIML, strLang, socket.id, clientUserId);
     });
 
     socket.on('RBMoveRobot', function (RBcode,aryRBMoveRobot) {
@@ -343,8 +347,12 @@ socketAll.on('connection', function (socket) {
         }
 
         socketAll.emit("ServerSendPibWenRtcToStt", [webRtcId]);
+        if (webRtcId == '') {
+            funUpdateServerMonitor('Cannot found pib webrtc id');
+        } else {
+            funUpdateServerMonitor('Sent Pib Web Rtc id to stt: ' + webRtcId);
+        }
 
-        funUpdateServerMonitor('Sent Pib Web Rtc id to stt: ' + webRtcId);
     });
 
     // Catch any unexpected error, to avoid system hangs
@@ -870,7 +878,7 @@ function funForgetPWSendEmail(strUsrEmail, result, strLang) {
 var aryAIML = [];
 var gintAIMLCount = 0;
 
-function funRequestPythonAIML(strAIML, socID, clientUserId) {
+function funRequestPythonAIML(strAIML, strLang, socID, clientUserId) {
     // Increate Counter
     gintAIMLCount += 1;
 
@@ -889,7 +897,7 @@ function funRequestPythonAIML(strAIML, socID, clientUserId) {
 
     // Here Call Python AIML
     // let strSendToPy = 'MESSAGE:' + gintAIMLCount + ';' + strAIML;
-    let strSendToPy = 'MESSAGE:' + gintAIMLCount + ';' + b64AIML;
+    let strSendToPy = 'MESSAGE:' + gintAIMLCount + ';' + b64AIML + ';' + strLang;
     funUpdateServerMonitor("Server send to py client message: " + strSendToPy, true);
 
     // there may be no pyAIML
@@ -908,6 +916,8 @@ function funRequestPythonAIML(strAIML, socID, clientUserId) {
 
 function funAIMLEndRes(idSocket, idUser, strAnswer) {
     // Get Count in Array
+
+    funUpdateServerMonitor("Start AIML End Res, ans: " + strAnswer, false);
 
     // Send to client
     //socketAll.to(`${idSocket}`).emit('SocketSendAIMLToClient', [strAnswer]);
@@ -1279,7 +1289,15 @@ function funWikiSearch(strContent, strCaller, aryValues) {
 
     //https://en.wikipedia.org/w/api.php?format=json&action=query&prop=extracts&exintro&explaintext&redirects=1&titles=Stack%20Overflow
 
-    let strLang = "zh";
+    let strLang = "en";
+
+    if (Buffer.byteLength(strContent) == strContent.length) {
+        // en
+        strLang = "en";
+    } else {
+        // default = 'zh'
+        strLang = "zh";
+    }
 
     let strAction = 'query';
     let strProp = 'extracts';
@@ -1309,12 +1327,25 @@ function funWikiSearch(strContent, strCaller, aryValues) {
             let extractAns = parsedData["query"]["pages"][Object.keys(parsedData.query.pages)[0]]["extract"];
             //console.log(extractAns);
             try {
-                extractAns = extractAns.substring(0,intTTSMax);
-                if (extractAns.lastIndexOf("。") != -1) {
-                    extractAns = extractAns.substring(0,extractAns.lastIndexOf("。")+1);
+                if (strLang == 'zh') {
+                    extractAns = extractAns.substring(0,intTTSCHMax);
+
+                    if (extractAns.lastIndexOf("。") != -1) {
+                        extractAns = extractAns.substring(0,extractAns.lastIndexOf("。")+1);
+                    }
+                } else {
+                    extractAns = extractAns.substring(0,intTTSCHMax * 2);
+
+                    if (extractAns.lastIndexOf(".") != -1) {
+                        extractAns = extractAns.substring(0,extractAns.lastIndexOf(".")+1);
+                    }
                 }
             } catch (Err) {
-                extractAns = "我沒有" + strContent + "的资料";
+                if (strLang == 'en') {
+                    extractAns = "I don't have the information of " + strContent;
+                } else {
+                    extractAns = "我沒有" + strContent + "的资料";
+                }
             }
 
 

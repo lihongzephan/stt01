@@ -363,6 +363,7 @@ class _ClsHomeState extends State<ClsHome> {
   }
 
   Widget Body() {
+    ut.funDebug('Get UserID: ' + gv.getString('strLoginID'));
     return Container(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,

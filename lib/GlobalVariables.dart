@@ -214,6 +214,8 @@ class gv {
 
   static String sttTranscription = '';
 
+  static String sttRecognisedLang = 'EN';
+
   //String _currentLocale = 'en_US';
   static Language sttSelectedLang = languages.first;
 
@@ -303,12 +305,32 @@ class gv {
           case 'Home':
             sttCancel();
             gv.listText.add(sttTranscription);
-            print('listText: ' + gv.listText[0]);
-            print('length: ' + gv.listText.length.toString());
+            ut.funDebug('listText: ' + gv.listText[0]);
+            ut.funDebug('length: ' + gv.listText.length.toString());
             gv.storeHome.dispatch(Actions.Increment);
             gv.timHome = DateTime.now().millisecondsSinceEpoch;
-            print('sent text: ' + text);
-            gv.socket.emit('ClientNeedAIML', [text]);
+
+            // Check language
+            //ut.funDebug("string bytes: " + ut.stringBytes(sttTranscription).toString());
+            //ut.funDebug("length: " + sttTranscription.length.toString());
+            //ut.funDebug("strLang: " + ls.strLang);
+            if (ut.stringBytes(sttTranscription) == sttTranscription.length) {
+              // Language is english
+              sttRecognisedLang = 'EN';
+            } else {
+              // Not english, check selected language
+              if (ls.strLang == "EN") {
+                // default = 'SC'
+                sttRecognisedLang = 'SC';
+              } else {
+                // get selected language in app
+                sttRecognisedLang = ls.strLang;
+              }
+            }
+
+            ut.funDebug("sttRecognisedLang: " + sttRecognisedLang);
+            gv.socket.emit('ClientNeedAIML', [text, sttRecognisedLang]);
+            ut.funDebug('sent text: ' + text);
             break;
           default:
             break;
@@ -334,7 +356,7 @@ class gv {
     static List<dynamic> rtcPeers;
     static var rtcSelfId = '';
     static bool rtcInCalling = false;
-    static String rtcServerIP = "192.168.123.5";
+    static String rtcServerIP = "www.zephan.top";
     static var rtcPerrId = '';
     static var timGetWRTCId = DateTime.now().millisecondsSinceEpoch;
 
@@ -418,7 +440,7 @@ class gv {
           // Check Login Again if strLoginID != ''
           if (strLoginID != '') {
             timLogin = DateTime.now().millisecondsSinceEpoch;
-            socket.emit('LoginToServer', []);
+            socket.emit('LoginToServer', [strLoginID, strLoginPW, false]);
           }
         }
       });
@@ -532,6 +554,7 @@ class gv {
         if (data[1] != true) {
           // Not the First Time Login, but a Re-Login
           // Change SettingsMain Login/Logout State
+          ut.funDebug('LoginResult: ' + data[0]);
           if (data[0] == '0000') {
             // Re-Login Successful
             // Nothing Changed
@@ -605,6 +628,10 @@ class gv {
           default:
             break;
         }
+
+        socket.on('HBReturn', (data) async {
+          timLastHbReceive = DateTime.now().millisecondsSinceEpoch;
+        });
       });
 
 
@@ -617,13 +644,22 @@ class gv {
       threadHB.start();
     } // End of initSocket()
 
+
+    static int intHBFinalTimeout = 30000;
+    static int timLastHbReceive = DateTime.now().millisecondsSinceEpoch;
+
     // HeartBeat Timer
     static void funTimerHeartBeat() async {
       while (true) {
         await Thread.sleep(intHBInterval);
         if (socket != null) {
           // print('Sending HB...' + DateTime.now().toString());
-          socket.emit('HB', [strLoginID]);
+          socket.emit('HB', [strLoginID, rtcSelfId]);
+        }
+
+        if (DateTime.now().millisecondsSinceEpoch - timLastHbReceive > intHBFinalTimeout) {
+          gbolSIOConnected = false;
+          socket.connect();
         }
       }
     } // End of funTimerHeartBeat()
