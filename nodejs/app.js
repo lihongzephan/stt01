@@ -311,7 +311,16 @@ socketAll.on('connection', function (socket) {
             }
         }
         funUpdateServerMonitor("Client Need Python aiml: " + strAIML + ' userid: ' + clientUserId + ' strLang: ' + strLang, false);
-        funRequestPythonAIML(strAIML, strLang, socket.id, clientUserId);
+        
+        // Increate Counter
+        gintAIMLCount += 1;
+
+        // Push into Array
+        aryAIML.push({ count: gintAIMLCount, sockID: socket.id, userID: clientUserId});
+        
+        funpyAIMLGotDataFromClient('', 'ANSWER::' + gintAIMLCount.toString() + ';' + strAIML);
+
+        // funRequestPythonAIML(strAIML, strLang, socket.id, clientUserId);
     });
 
     socket.on('RBMoveRobot', function (RBcode,aryRBMoveRobot) {
@@ -1006,7 +1015,7 @@ funUpdateConsole('pyAIML Socket Server Listening on: ' +
     pyAIMLPORT, true);
 
 
-function funpyAIMLGotDataFromClient(sock, data) {
+function funpyAIMLGotDataFromClient(sock, data) { 
     try {
         let i = 0;
         let strTemp = data.toString('utf-8');
@@ -1075,12 +1084,15 @@ function funCheckFunInAnswer(idSocket, idUser, strAns) {
     let aryFunValue = [];
 
     // Check if there is fun symbol
-    let intTemp = strAnswer.indexOf('<fun>(');
+    // @fun(takePhoto)@/fun
+    //let intTemp = strAnswer.indexOf('<fun>(');
+    let intTemp = strAnswer.indexOf('@fun(');
     if (intTemp != -1) {
 
         // there is function
-        let intTemp2 = strAnswer.indexOf(')</fun>');
-        strAnswer = strAnswer.substring(6, intTemp2);
+        //let intTemp2 = strAnswer.indexOf(')</fun>');
+        let intTemp2 = strAnswer.indexOf(')@/fun');
+        strAnswer = strAnswer.substring(5, intTemp2);
 
         // get function name
         let intTemp3 = strAnswer.indexOf(',');

@@ -194,6 +194,12 @@ class _ClsHomeState extends State<ClsHome> {
 //    _signaling.switchCamera();
 //  }
 
+  void funAddAIMLAns() {
+    ut.funDebug('Add Ans Button pressed');
+  }
+
+
+
   void funHomeInputAudio() async {
     try {
       //ut.funDebug('Should Init Web rtc: ' + gv.bolWebRtcShouldInit.toString());
@@ -327,6 +333,19 @@ class _ClsHomeState extends State<ClsHome> {
       gv.intLastLeft = intLeft;
       gv.intLastRight = intRight;
     }
+  }
+
+  Widget AddAnsButton() {
+    var text = 'Add Answer';
+    var color = Colors.blueAccent;
+    return RaisedButton(
+      shape: new RoundedRectangleBorder(
+          borderRadius: new BorderRadius.circular(sv.dblDefaultRoundRadius)),
+      textColor: Colors.black,
+      color: color,
+      onPressed: () => funAddAIMLAns(),
+      child: Text(text, style: TextStyle(fontSize: sv.dblDefaultFontSize * 1)),
+    );
   }
 
   Widget RecordButton() {
@@ -480,6 +499,40 @@ class _ClsHomeState extends State<ClsHome> {
 //            ],
 //          ),
 //          Text(' '),
+          Container(
+            child: Row(
+              children: <Widget>[
+                Text("  Learn AIML: ", style: TextStyle(fontSize: sv.dblDefaultFontSize * 1)),
+                new Transform.scale(
+                  scale: 2.0,
+                  child: new Checkbox(
+                    value: gv.bolLearnAIML,
+                    onChanged: (bool value) {
+                      setState(() {
+                        gv.bolLearnAIML = value;
+                      });
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: Text(''),
+                ),
+                Container(
+                  // height: sv.dblBodyHeight / 4,
+                  // width: sv.dblScreenWidth / 4,
+                  child: Center(
+                    child: SizedBox(
+                      height: sv.dblDefaultFontSize * 2,
+                      width: sv.dblScreenWidth / 3,
+                      child: AddAnsButton(),
+                    ),
+                  ),
+                ),
+                Text('  '),
+              ],
+            ),
+          ),
+          Text(''),
           Container(
             width: sv.dblScreenWidth,
             child: Column(

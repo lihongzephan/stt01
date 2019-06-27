@@ -67,6 +67,8 @@ Future <void> main2() async {
   // Init socket.io
   await gv.initSocket();
 
+  ut.funDebug('1');
+
   // Run MainApp
   runApp(StoreProvider(
     store: gv.storeMain,

@@ -6,12 +6,14 @@ import 'dart:convert';
 import 'dart:core';
 import 'package:adhara_socket_io/adhara_socket_io.dart';
 import 'package:connectivity/connectivity.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:redux/redux.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:threading/threading.dart';
 import 'package:speech_recognition/speech_recognition.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+
 // import 'package:flutter_webrtc/webrtc.dart';
 
 // Import Self Darts
@@ -329,8 +331,7 @@ class gv {
             }
 
             ut.funDebug("sttRecognisedLang: " + sttRecognisedLang);
-            gv.socket.emit('ClientNeedAIML', [text, sttRecognisedLang]);
-            ut.funDebug('sent text: ' + text);
+            gv.dioGet('sttResult', 'http://www.zephan.top:10551/get/' + aimlKey + '/' + sttRecognisedLang + '/' + base64.encode(utf8.encode(text)));
             break;
           default:
             break;
@@ -359,6 +360,67 @@ class gv {
     static String rtcServerIP = "www.zephan.top";
     static var rtcPerrId = '';
     static var timGetWRTCId = DateTime.now().millisecondsSinceEpoch;
+
+
+
+    // Dio Vars
+    static var dio = Dio();
+    static var aimlKey = 'DyKsg4WkmA7DxctF';
+
+    static dioGet(String strCaller, String strUrl) async {
+      try {
+        Response response = await dio.get(strUrl);
+        //print(response.data);
+        response.data = response.data.substring(2, response.data.length - 2);
+
+        bool bolEnd = false;
+        while (bolEnd == false) {
+          bolEnd = true;
+          int index = response.data.indexOf('", "');
+          if (index != -1) {
+            bolEnd = false;
+            String strA = response.data.substring(0, index);
+            String strB = response.data.substring(index+3);
+            response.data = strA + "', '" + strB;
+          }
+          index = response.data.indexOf('",' + " '");
+          if (index != -1) {
+            bolEnd = false;
+            String strA = response.data.substring(0, index);
+            String strB = response.data.substring(index+3);
+            response.data = strA + "', '" + strB;
+          }
+          index = response.data.indexOf("', " + '"');
+          if (index != -1) {
+            bolEnd = false;
+            String strA = response.data.substring(0, index);
+            String strB = response.data.substring(index+3);
+            response.data = strA + "', '" + strB;
+          }
+        }
+
+        response.data = response.data.split("', '");
+        //print(response.data);
+        //print(response.data[0]);
+        ut.funDebug('Got response from dio: ' + response.data.toString());
+
+        switch (strCaller) {
+          case 'sttResult':
+            ut.funDebug('aiml return: ' + response.data[4]);
+            gv.socket.emit('ClientNeedAIML', [response.data[4], sttRecognisedLang]);
+            ut.funDebug('sent text: ' + response.data[4]);
+
+            // Below is learn aiml
+
+            break;
+          default:
+            break;
+        }
+      } catch (err) {
+        ut.funDebug('dioGet Error: ' + err.toString());
+      }
+    }
+
 
 
     // Vars For Pages
@@ -391,6 +453,7 @@ class gv {
     static bool bolWebRtcShouldInit = true;
     static bool bolCanPressWebRtc = true;
     static bool bolHomeHavePibWebRtcId = false;
+    static bool bolLearnAIML = false;
 
     // Var For Login
     static var strLoginID = '';
