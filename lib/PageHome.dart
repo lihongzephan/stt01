@@ -162,6 +162,8 @@ class _ClsHomeState extends State<ClsHome> {
           _remoteRenderer.srcObject = null;
           this.setState(() {});
         });
+
+        ut.funDebug('Done connect web rtc');
       }
     } catch (err) {
       ut.funDebug('web rtc connect error: ' + err.toString());
@@ -565,13 +567,13 @@ class _ClsHomeState extends State<ClsHome> {
     );
   }
 
-//  void funInitFirstTime() {
-//    // WebRTC
-//    if (gv.rtcSelfId == '') {
-//      initRenderers();
-//      _connect();
-//    }
-//  }
+  void funInitFirstTime() {
+    // WebRTC
+    if (gv.rtcSelfId == '') {
+      initRenderers();
+      _connect();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

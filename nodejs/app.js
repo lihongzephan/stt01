@@ -19,7 +19,8 @@ const http = require('https');
 
 
 // Bing Image Search
-var BingSubscriptionKey = 'b0541b758e434de198f1cc60e02ed865';
+//var BingSubscriptionKey = 'b0541b758e434de198f1cc60e02ed865';
+var BingSubscriptionKey = '20d116b898d14307b276e750db352997';
 var BingHost = 'api.cognitive.microsoft.com';
 var BingPath = '/bing/v7.0/images/search';
 let httpsBing = require('https');
@@ -1250,7 +1251,8 @@ function funBingImageSearch(strCaller, strSearch, aryValues) {
             });
 
             BingResponse.on('end', function () {
-                // funUpdateServerMonitor("Bing Result: " + strBingBody, true);
+                funUpdateServerMonitor('Got Result from Bing', true);
+                //funUpdateServerMonitor("Bing Result: " + strBingBody, true);
                 let aryBingBody = JSON.parse(strBingBody);
                 //funUpdateServerMonitor(strBingBody, false);
                 //funUpdateServerMonitor(aryBingBody, false);
