@@ -101,9 +101,26 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+
+  AppLifecycleState _lastLifecycleState;
+
   @override
   initState() {
     super.initState();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    _lastLifecycleState = state;
+    print('**********   Main Life Cycle State: ' +
+        _lastLifecycleState.toString() +
+        '   **********');
+    if (_lastLifecycleState.toString() == 'AppLifecycleState.paused') {
+      try {} catch (err) {}
+    } else if (_lastLifecycleState.toString() == 'AppLifecycleState.resumed') {
+      await SystemChrome.setEnabledSystemUIOverlays([]);
+    }
+    setState(() {});
   }
 
   @override

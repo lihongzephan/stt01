@@ -39,6 +39,7 @@ class ls {
     { 'Title':'Change', 'Content':'Change'},
     { 'Title':'ChangeEmailNeedActivateAgain', 'Content':'Need to Re-Activate if email is changed'},
     { 'Title':'ChangePassword', 'Content':'Change Password'},
+    { 'Title':'Confirm', 'Content':'Confirm'},
     { 'Title':'EmailAddress', 'Content':'Email Address'},
     { 'Title':'EmailAddressFormatError', 'Content':'Email Address is not in the correct format'},
     { 'Title':'EmailAddressRegisterWarning', 'Content':'An Activation Code will be sent to you via Email'},
@@ -89,6 +90,21 @@ class ls {
     { 'Title':'Yes', 'Content':'Yes'},
 
     { 'Title':'HomeContent', 'Content':'Home Content'},
+
+    // Page Home
+    { 'Title':'EnableVideo', 'Content':'Click To Enable Video'},
+    { 'Title':'LearnAIML', 'Content':'Learn AIML: '},
+    { 'Title':'EditAnswer', 'Content':'Edit Answer'},
+    { 'Title':'Record', 'Content':'Record'},
+    { 'Title':'Cancel', 'Content':'Cancel'},
+    { 'Title':'PressBtnToTalk', 'Content':'Press button to talk'},
+    { 'Title':'InCallCannotChangePage', 'Content':'Please Stop Video Call Before Exit This Page'},
+    { 'Title':'EnterAnswer', 'Content':'Please Enter Answer'},
+    { 'Title':'LearnAIMLSuccess', 'Content':'Successfully Learn AIML'},
+    { 'Title':'LearnAIMLFailed', 'Content':'Failed to Learn AIML'},
+    { 'Title':'CannotLearnAIML', 'Content':'Cannot Learn AIML with NO Questions/Pattern OR Answer/Template'},
+
+    { 'Title':'ErrCantGetPibId', 'Content':'Error: Get Peer WebRtc Id Timeout'},
   ];
 
   // vars for Simplified Chinese
@@ -108,6 +124,7 @@ class ls {
     { 'Title':'Change', 'Content':'更改'},
     { 'Title':'ChangeEmailNeedActivateAgain', 'Content':'若更改电邮需要重新激活账户'},
     { 'Title':'ChangePassword', 'Content':'更改密码'},
+    { 'Title':'Confirm', 'Content':'确认'},
     { 'Title':'EmailAddress', 'Content':'电邮地址'},
     { 'Title':'EmailAddressFormatError', 'Content':'电邮地址格式不正确'},
     { 'Title':'EmailAddressRegisterWarning', 'Content':'激活码将会透过电邮发送给您'},
@@ -158,6 +175,21 @@ class ls {
     { 'Title':'Yes', 'Content':'是'},
 
     { 'Title':'HomeContent', 'Content':'首页内容'},
+
+    // Page Home
+    { 'Title':'EnableVideo', 'Content':'点击启用实时视频'},
+    { 'Title':'LearnAIML', 'Content':'学习AIML: '},
+    { 'Title':'EditAnswer', 'Content':'修改答案'},
+    { 'Title':'Record', 'Content':'录音'},
+    { 'Title':'Cancel', 'Content':'取消'},
+    { 'Title':'PressBtnToTalk', 'Content':'按下按钮说话'},
+    { 'Title':'InCallCannotChangePage', 'Content':'离开此页面前，请先关闭实时视频'},
+    { 'Title':'EnterAnswer', 'Content':'请输入答案'},
+    { 'Title':'LearnAIMLSuccess', 'Content':'成功学习 AIML'},
+    { 'Title':'LearnAIMLFailed', 'Content':'学习 AIML 失败'},
+    { 'Title':'CannotLearnAIML', 'Content':'无法学习 AIML: 缺乏问题/Pattern 或 答案/Template'},
+
+    { 'Title':'ErrCantGetPibId', 'Content':'错误：获取 Peer WebRtc Id 超时'},
   ];
 
   // vars for Traditional Chinese
@@ -177,6 +209,7 @@ class ls {
     { 'Title':'Change', 'Content':'更改'},
     { 'Title':'ChangeEmailNeedActivateAgain', 'Content':'若更改電郵需要重新激活賬戶'},
     { 'Title':'ChangePassword', 'Content':'更改密碼'},
+    { 'Title':'Confirm', 'Content':'確認'},
     { 'Title':'EmailAddress', 'Content':'電郵地址'},
     { 'Title':'EmailAddressFormatError', 'Content':'電郵地址格式不正確'},
     { 'Title':'EmailAddressRegisterWarning', 'Content':'激活碼將會透過電郵發送給您'},
@@ -227,6 +260,21 @@ class ls {
     { 'Title':'Yes', 'Content':'是'},
 
     { 'Title':'HomeContent', 'Content':'首頁內容'},
+
+    // Page Home
+    { 'Title':'EnableVideo', 'Content':'點擊啟用實時視頻'},
+    { 'Title':'LearnAIML', 'Content':'學習AIML: '},
+    { 'Title':'EditAnswer', 'Content':'修改答案'},
+    { 'Title':'Record', 'Content':'錄音'},
+    { 'Title':'Cancel', 'Content':'取消'},
+    { 'Title':'PressBtnToTalk', 'Content':'按下按鈕說話'},
+    { 'Title':'InCallCannotChangePage', 'Content':'離開此頁面前，請先關閉實時視頻'},
+    { 'Title':'EnterAnswer', 'Content':'請輸入答案'},
+    { 'Title':'LearnAIMLSuccess', 'Content':'成功學習 AIML'},
+    { 'Title':'LearnAIMLFailed', 'Content':'學習 AIML 失敗'},
+
+    { 'Title':'ErrCantGetPibId', 'Content':'錯誤：獲取 Peer WebRtc Id 超時'},
+    { 'Title':'CannotLearnAIML', 'Content':'無法學習 AIML: 缺乏問題/Pattern 或 答案/Template'},
   ];
 
   // To set Current Language

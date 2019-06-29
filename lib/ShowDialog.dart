@@ -18,8 +18,94 @@ class sd {
   // 1. AlertDialog (To show 1 row of buttons at the bottom)
   // 2. SimpleDialog (To show rows of buttons)
   // See Below examples for AlertDialog (case 'Logout') and SimpleDialog (case 'Logout2')
+
+  // How to Call
+
+  // The following example show how to call 'YesNo'
+  // gv.strDialogYN = '';
+  // sd.showAlert(context, 'Title','Content','YesNo');
+
   static void showAlert(BuildContext context, strTitle, strContent, strAction) {
     switch (strAction) {
+      case 'YesNo':
+        showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => AlertDialog(
+                  title: Text(strTitle),
+                  content: Text(strContent),
+                  actions: <Widget>[
+                    new FlatButton(
+                      child: new Text(ls.gs('Yes')),
+                      onPressed: () {
+                        gv.strDialogYN = 'Y';
+                        Navigator.of(context).pop();
+
+                        // gv.storeHome.dispatch(Actions.Increment);
+                      },
+                    ),
+                    new FlatButton(
+                      child: new Text(ls.gs('No')),
+                      onPressed: () {
+                        gv.strDialogYN = 'N';
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ],
+                ));
+        break;
+      case 'EditAIMLAnswer':
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+                title: Text(strTitle),
+                content: Row(
+                  children: <Widget>[
+                    Text(' '),
+                    Expanded(
+                      child: TextField(
+                        controller: gv.ctlEditAIMLAnswer,
+                        autofocus: false,
+                        obscureText: false,
+                        decoration: InputDecoration(
+                          hintText: ls.gs('EditAnswer'),
+                          contentPadding:
+                              EdgeInsets.fromLTRB(10.0, 10.0, 10.0, 10.0),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16.0)),
+                        ),
+                      ),
+                    ),
+                    Text(' '),
+                  ],
+                ),
+                actions: <Widget>[
+                  new FlatButton(
+                      child: new Text(ls.gs('Confirm')),
+                      onPressed: () async {
+                        Navigator.of(context).pop();
+
+                        // Do something here
+                        gv.strDialogEditAIMLResult = 'Y';
+                        // May be set a value here
+
+                        // May be Navigator.pushAndRemoveUntil to somewhere
+
+                        // May be do nothing, just let the original dart file use future.delay to check the return value
+                      }),
+                  new FlatButton(
+                    child: new Text(ls.gs('Cancel')),
+                    onPressed: () async {
+                      Navigator.of(context).pop();
+
+                      gv.strDialogEditAIMLResult = 'N';
+                    },
+                  ),
+                ],
+              ),
+        );
+        break;
       case 'Logout':
         showDialog(
             context: context,

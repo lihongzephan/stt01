@@ -8,6 +8,7 @@ import 'package:flutter_redux/flutter_redux.dart';
 // Import Self Darts
 import 'GlobalVariables.dart';
 import 'LangStrings.dart';
+import 'Utilities.dart';
 
 // Import Pages
 import 'PageHome.dart';
@@ -27,59 +28,73 @@ class _ClsBottomState extends State<ClsBottom> {
   }
 
   void _onItemTapped(int index) {
-    if (gv.gstrLang != '' && gv.bolLoading == false) {
-      gv.gintBottomIndex = index;
-      switch (index) {
-        case 0:
-          gv.bolHomeFirstIn = true;
+    try {
+      ut.funDebug('Bottom Item Tapped');
 
-          // Page Home Clicked
-          gv.gstrLastPage = gv.gstrCurPage;
-          gv.gstrCurPage = 'Home';
+      if (gv.gstrLang != '' && gv.bolLoading == false) {
+        gv.gintBottomIndex = index;
+        switch (index) {
+          case 0:
+            gv.bolHomeFirstIn = true;
 
-          // Goto Home
-          Navigator.pushAndRemoveUntil(context,
-            MaterialPageRoute(
-                builder: (context) => StoreProvider(
-                  store: gv.storeHome,
-                  child: StoreConnector<int, int>(
-                    builder: (BuildContext context, int intTemp) {
-                      return ClsHomeBase(intTemp);
-                    },
-                    converter: (Store<int> sintTemp) {
-                      return sintTemp.state;
-                    },
-                  ),
-                )),
-                (_) => false,
-          );
+            // Page Home Clicked
+            gv.gstrLastPage = gv.gstrCurPage;
+            gv.gstrCurPage = 'Home';
 
-          break;
-        case 1:
-          // Page Settings Clicked
-          gv.gstrLastPage = gv.gstrCurPage;
-          gv.gstrCurPage = 'SettingsMain';
+            // Goto Home
+            Navigator.pushAndRemoveUntil(context,
+              MaterialPageRoute(
+                  builder: (context) => StoreProvider(
+                    store: gv.storeHome,
+                    child: StoreConnector<int, int>(
+                      builder: (BuildContext context, int intTemp) {
+                        return ClsHomeBase(intTemp);
+                      },
+                      converter: (Store<int> sintTemp) {
+                        return sintTemp.state;
+                      },
+                    ),
+                  )),
+                  (_) => false,
+            );
 
-          // Goto SettingsMain
-          Navigator.pushAndRemoveUntil(context,
-            MaterialPageRoute(
-                builder: (context) => StoreProvider(
-                  store: gv.storeSettingsMain,
-                  child: StoreConnector<int, int>(
-                    builder: (BuildContext context, int intTemp) {
-                      return ClsSettingsMain(intTemp);
-                    },
-                    converter: (Store<int> sintTemp) {
-                      return sintTemp.state;
-                    },
-                  ),
-                )),
-                (_) => false,
-          );
-          break;
-        default:
-          break;
+            break;
+          case 1:
+            if (gv.rtcInCalling) {
+              ut.showToast(ls.gs('InCallCannotChangePage'));
+              gv.gstrCurPage = 'Home';
+              return;
+            }
+
+            ut.funDebug('Change Page to Settings Main');
+
+            // Page Settings Clicked
+            gv.gstrLastPage = gv.gstrCurPage;
+            gv.gstrCurPage = 'SettingsMain';
+
+            // Goto SettingsMain
+            Navigator.pushAndRemoveUntil(context,
+              MaterialPageRoute(
+                  builder: (context) => StoreProvider(
+                    store: gv.storeSettingsMain,
+                    child: StoreConnector<int, int>(
+                      builder: (BuildContext context, int intTemp) {
+                        return ClsSettingsMain(intTemp);
+                      },
+                      converter: (Store<int> sintTemp) {
+                        return sintTemp.state;
+                      },
+                    ),
+                  )),
+                  (_) => false,
+            );
+            break;
+          default:
+            break;
+        }
       }
+    } catch(err) {
+      ut.showToast('BottomBar Error: ' + err.toString());
     }
   }
 

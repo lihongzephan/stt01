@@ -137,6 +137,9 @@ class ClsSettingsMain extends StatelessWidget {
         ];
       }
     }
+
+    ut.funDebug('Settings Main Start Setup');
+
     return Scaffold(
       appBar: PreferredSize(
         child: AppBar(

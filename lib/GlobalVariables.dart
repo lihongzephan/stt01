@@ -331,7 +331,13 @@ class gv {
             }
 
             ut.funDebug("sttRecognisedLang: " + sttRecognisedLang);
-            gv.dioGet('sttResult', 'http://www.zephan.top:10551/get/' + aimlKey + '/' + sttRecognisedLang + '/' + base64.encode(utf8.encode(text)));
+
+            // Remove all '/' in text, as '+' and '/' are two symbols in all 64 symbols
+            String strB64Text = base64.encode(utf8.encode(text));
+            strB64Text = strB64Text.replaceAll('/', '_');
+            //ut.funDebug('strB64Text: ' + strB64Text);
+
+            gv.dioGet('sttResult', 'http://www.zephan.top:10551/get/' + aimlKey + '/' + sttRecognisedLang + '/' + strB64Text);
             break;
           default:
             break;
@@ -366,6 +372,7 @@ class gv {
     // Dio Vars
     static var dio = Dio();
     static var aimlKey = 'DyKsg4WkmA7DxctF';
+    static var aimlLearnName = 'LEARN';
 
     static dioGet(String strCaller, String strUrl) async {
       try {
@@ -380,21 +387,21 @@ class gv {
           if (index != -1) {
             bolEnd = false;
             String strA = response.data.substring(0, index);
-            String strB = response.data.substring(index+3);
+            String strB = response.data.substring(index+4);
             response.data = strA + "', '" + strB;
           }
-          index = response.data.indexOf('",' + " '");
-          if (index != -1) {
+          int index2 = response.data.indexOf("', " + '"');
+          if (index2 != -1) {
             bolEnd = false;
-            String strA = response.data.substring(0, index);
-            String strB = response.data.substring(index+3);
+            String strA = response.data.substring(0, index2);
+            String strB = response.data.substring(index2+4);
             response.data = strA + "', '" + strB;
           }
-          index = response.data.indexOf("', " + '"');
-          if (index != -1) {
+          int index3 = response.data.indexOf('",' + " '");
+          if (index3 != -1) {
             bolEnd = false;
-            String strA = response.data.substring(0, index);
-            String strB = response.data.substring(index+3);
+            String strA = response.data.substring(0, index3);
+            String strB = response.data.substring(index3+4);
             response.data = strA + "', '" + strB;
           }
         }
@@ -410,7 +417,18 @@ class gv {
             gv.socket.emit('ClientNeedAIML', [response.data[4], sttRecognisedLang]);
             ut.funDebug('sent text: ' + response.data[4]);
 
-            // Below is learn aiml
+            break;
+          case 'learnAIML':
+            ut.funDebug('learn aiml return: ' + response.data[0]);
+            if (response.data[0] == 'LearnAIML Success') {
+              //ut.showToast(ls.gs('LearnAIMLSuccess'));
+              List<String> aryDbPublish = ['PublishROBOTGroup', base64.encode(utf8.encode(response.data[1]))];
+              ut.funDebug(base64.encode(utf8.encode(response.data[1])));
+              dioPost('publishAIML', "http://www.bigaibot.com/php/AjaxDbPublishROBOTGroup.php", aryDbPublish);
+
+            } else {
+              ut.showToast(ls.gs('LearnAIMLFailed'));
+            }
 
             break;
           default:
@@ -421,6 +439,78 @@ class gv {
       }
     }
 
+  static dioPost(String strCaller, String strUrl, List<String> aryValues) async {
+      try {
+        dio.options.contentType = ContentType.parse("application/x-www-form-urlencoded");
+        Response response = await dio.post(
+            strUrl,
+            data: { 'aryAjaxSend': base64.encode(utf8.encode(json.encode(aryValues)))},
+            options: new Options(contentType: ContentType.parse("application/x-www-form-urlencoded"))
+        );
+
+        // Decode response
+
+        response.data = response.data.substring(2, response.data.length - 2);
+
+        bool bolEnd = false;
+        while (bolEnd == false) {
+          bolEnd = true;
+          int index = response.data.indexOf('", "');
+          if (index != -1) {
+            bolEnd = false;
+            String strA = response.data.substring(0, index);
+            String strB = response.data.substring(index+4);
+            response.data = strA + "', '" + strB;
+          }
+          int index2 = response.data.indexOf("', " + '"');
+          if (index2 != -1) {
+            bolEnd = false;
+            String strA = response.data.substring(0, index2);
+            String strB = response.data.substring(index2+4);
+            response.data = strA + "', '" + strB;
+          }
+          int index3 = response.data.indexOf('",' + " '");
+          if (index3 != -1) {
+            bolEnd = false;
+            String strA = response.data.substring(0, index3);
+            String strB = response.data.substring(index3+4);
+            response.data = strA + "', '" + strB;
+          }
+          int index4 = response.data.indexOf('","');
+          if (index4 != -1) {
+            bolEnd = false;
+            String strA = response.data.substring(0, index4);
+            String strB = response.data.substring(index4+3);
+            response.data = strA + "', '" + strB;
+          }
+        }
+
+        response.data = response.data.split("', '");
+
+        ut.funDebug('dioPost response: ' + response.toString());
+
+        // Response is ready to be used
+
+        switch (strCaller) {
+          case 'publishAIML':
+            if (response.data[1] == '0000') {
+              ut.showToast(ls.gs('LearnAIMLSuccess'));
+            } else {
+              ut.showToast(ls.gs('LearnAIMLFailed'));
+            }
+            break;
+          default:
+            break;
+        }
+      } catch (err) {
+        ut.funDebug('dioPost Error: ' + err.toString());
+      }
+  }
+
+
+    // Vars for Show Dialog
+    static String strDialogYN = '';
+    static String strDialogEditAIMLResult = '';
 
 
     // Vars For Pages
@@ -454,6 +544,8 @@ class gv {
     static bool bolCanPressWebRtc = true;
     static bool bolHomeHavePibWebRtcId = false;
     static bool bolLearnAIML = false;
+    static final ctlEditAIMLAnswer = TextEditingController();
+    static String strAddAIML = '';
 
     // Var For Login
     static var strLoginID = '';

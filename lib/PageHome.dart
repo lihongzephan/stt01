@@ -3,6 +3,7 @@
 // Import Flutter Darts
 //import 'dart:convert';
 import 'dart:async';
+import 'dart:convert';
 
 //import 'dart:io';
 import 'package:flutter/material.dart';
@@ -15,12 +16,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_webrtc/webrtc.dart';
 import 'package:threading/threading.dart';
 
+import 'flutter_incall_manager.dart';
+import 'incall.dart';
+
 // Import Self Darts
 import 'LangStrings.dart';
 import 'ScreenVariables.dart';
 import 'GlobalVariables.dart';
 import 'Utilities.dart';
 import 'signaling.dart';
+import 'ShowDialog.dart';
 
 // Import Pages
 import 'BottomBar.dart';
@@ -66,10 +71,15 @@ class _ClsHomeState extends State<ClsHome> {
 
   // Vars
 
+  AppLifecycleState _lastLifecycleState;
+
   // Web Rtc
   Signaling _signaling;
   RTCVideoRenderer _localRenderer = new RTCVideoRenderer();
   RTCVideoRenderer _remoteRenderer = new RTCVideoRenderer();
+
+  // flutter incall manager
+  //IncallManager incall = new IncallManager();
 
   @override
   initState() {
@@ -79,6 +89,11 @@ class _ClsHomeState extends State<ClsHome> {
       initRenderers();
       _connect();
     }
+
+    //incall.checkRecordPermission();
+    //incall.requestRecordPermission();
+    //incall.start({'media': 'audio', 'auto': true, 'ringback': ''});
+    //incall.setSpeakerphoneOn(true);
   }
 
   @override
@@ -88,22 +103,60 @@ class _ClsHomeState extends State<ClsHome> {
     funDisposeWebRTC();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _lastLifecycleState = state;
+    ut.funDebug('*****   Life Cycle State: ' +
+        _lastLifecycleState.toString() +
+        '   *****');
+    if (_lastLifecycleState.toString() == 'AppLifecycleState.paused') {
+      try {
+        if (gv.rtcInCalling) {
+          _hangUp();
+          setState(() {});
+          ut.funDebug('WebRTC hang up in didChange paused');
+        }
+      } catch (err) {
+        ut.funDebug('Video Pause Error in didChange paused: ' + err.toString());
+      }
+    } else if (_lastLifecycleState.toString() == 'AppLifecycleState.resumed') {
+      try {
+        if (gv.rtcInCalling) {
+          funWebRTCBtnPressed();
+          ut.funDebug('WebRTC Invite in didChange resumed');
+        }
+        setState(() {});
+        ut.funDebug('After setState in didChange resumed');
+      } catch (err) {
+        ut.funDebug(
+            'Video Pause Error in didChange resumed: ' + err.toString());
+      }
+    }
+  }
+
   void funDisposeWebRTC() {
     try {
       if (_signaling != null) _signaling.close();
+      ut.funDebug('_signaling Closed!');
     } catch (Err) {
       print("_signaling.close() Error:" + Err.toString());
     }
     try {
       _localRenderer.dispose();
+      ut.funDebug('_localRenderer disposed!');
     } catch (Err) {
       print("_localRenderer.dispose() Error:" + Err.toString());
     }
     try {
       _remoteRenderer.dispose();
+      ut.funDebug('_remoteRenderer disposed!');
     } catch (Err) {
       print("_remoteRenderer.dispose() Error:" + Err.toString());
     }
+
+    gv.bolWebRtcShouldInit = true;
+
+    ut.funDebug('funDisposeWebRTC Done');
   }
 
   initRenderers() async {
@@ -198,9 +251,75 @@ class _ClsHomeState extends State<ClsHome> {
 
   void funAddAIMLAns() {
     ut.funDebug('Add Ans Button pressed');
+
+    gv.strDialogEditAIMLResult = '';
+
+    sd.showAlert(context, 'Edit AIML', '', 'EditAIMLAnswer');
+
+    new Future.delayed(new Duration(milliseconds: 100), () async {
+      while (gv.strDialogEditAIMLResult == "") {
+        await Thread.sleep(100);
+
+        if (gv.strDialogEditAIMLResult == "Y") {
+          gv.strAddAIML = gv.ctlEditAIMLAnswer.text;
+          gv.ctlEditAIMLAnswer.text = '';
+
+          ut.funDebug('User Want to Add AIML: ' + gv.strAddAIML);
+
+          // Start learn aiml
+
+          String strLang = '';
+          if (ut.stringBytes(gv.strAddAIML) == gv.strAddAIML.length) {
+            strLang = 'EN';
+          } else {
+            strLang = gv.gstrLang;
+          }
+
+          bool bolContinue = true;
+
+          if (gv.listText.isNotEmpty) {
+            bolContinue = true;
+          } else {
+            bolContinue = false;
+            ut.showToast(ls.gs('CannotLearnAIML'));
+          }
+
+          if (bolContinue) {
+            if (gv.strAddAIML != '') {
+              // http://www.zephan.top:10551/learnAIML/<key>/<agrName>/<aimlLang>/<aimlPattern>/<aimlTemplate>
+              // http://www.zephan.top:10551/learnAIML/DyKsg4WkmA7DxctF/LEARN/EN/SEk=/SEk=
+              String strB64Pattern = base64.encode(utf8.encode(gv.listText[gv.listText.length - 1])).replaceAll('/', '_');
+              String strB64Template = base64.encode(utf8.encode(gv.strAddAIML)).replaceAll('/', '_');
+
+              gv.dioGet(
+                  'learnAIML',
+                  'http://www.zephan.top:10551/learnAIML/' +
+                      gv.aimlKey +
+                      '/' +
+                      gv.aimlLearnName +
+                      '/' +
+                      strLang +
+                      '/' +
+                      strB64Pattern +
+                      '/' +
+                      strB64Template);
+            } else {
+              ut.showToast(ls.gs('CannotLearnAIML'));
+            }
+          }
+
+          //ut.funDebug('LearnAIML strLang: ' + strLang);
+          //ut.funDebug('LearnAIML aimlKey: ' + gv.aimlKey);
+          //ut.funDebug('LearnAIML groupName: ' + gv.aimlLearnName);
+          //ut.funDebug('LearnAIML pattern: ' + base64.encode(utf8.encode(gv.listText[gv.listText.length - 1])));
+          //ut.funDebug('LearnAIML answer: ' + base64.encode(utf8.encode(gv.strAddAIML)));
+
+        } else {
+          // Do nothing
+        }
+      }
+    });
   }
-
-
 
   void funHomeInputAudio() async {
     try {
@@ -228,7 +347,6 @@ class _ClsHomeState extends State<ClsHome> {
     try {
       if (gv.bolWebRtcShouldInit) {
         if (gv.bolCanPressWebRtc) {
-
           gv.bolCanPressWebRtc = false;
 
           if (gv.rtcInCalling) {
@@ -249,11 +367,10 @@ class _ClsHomeState extends State<ClsHome> {
                 // Use string to check if it is array
                 if (gv.rtcPerrId == '') {
                   // this means the server not yet return any value
-                  if (DateTime
-                      .now()
-                      .millisecondsSinceEpoch - gv.timGetWRTCId > 4000) {
+                  if (DateTime.now().millisecondsSinceEpoch - gv.timGetWRTCId >
+                      4000) {
                     // Assume Get Id Fail after ? seconds
-                    ut.showToast('Error: Get Pib WebRtc Id Timeout');
+                    ut.showToast(ls.gs('ErrCantGetPibId'));
                     gv.bolHomeHavePibWebRtcId = true;
                   } else {
                     // Not Yet Timeout, so Continue Loading
@@ -279,6 +396,7 @@ class _ClsHomeState extends State<ClsHome> {
       }
     } catch (err) {
       ut.funDebug('web rtc btn pressed error: ' + err.toString());
+      //ut.showToast('web rtc btn pressed error: ' + err.toString());
     }
   }
 
@@ -331,19 +449,19 @@ class _ClsHomeState extends State<ClsHome> {
       gv.socket.emit('RBMoveRobot', [
         gv.strLoginID,
         ['F', intLeft, intRight, 0]
-    ]);
+      ]);
       gv.intLastLeft = intLeft;
       gv.intLastRight = intRight;
     }
   }
 
   Widget AddAnsButton() {
-    var text = 'Add Answer';
+    var text = ls.gs('EditAnswer');
     var color = Colors.blueAccent;
     return RaisedButton(
       shape: new RoundedRectangleBorder(
           borderRadius: new BorderRadius.circular(sv.dblDefaultRoundRadius)),
-      textColor: Colors.black,
+      textColor: Colors.white,
       color: color,
       onPressed: () => funAddAIMLAns(),
       child: Text(text, style: TextStyle(fontSize: sv.dblDefaultFontSize * 1)),
@@ -351,13 +469,13 @@ class _ClsHomeState extends State<ClsHome> {
   }
 
   Widget RecordButton() {
-    var text = 'Record';
+    var text = ls.gs('Record');
     var color = Colors.greenAccent;
     if (gv.sttIsListening) {
-      text = 'Cancel';
+      text = ls.gs('Cancel');
       color = Colors.redAccent;
     } else {
-      text = 'Record';
+      text = ls.gs('Record');
       color = Colors.greenAccent;
     }
     return RaisedButton(
@@ -378,7 +496,7 @@ class _ClsHomeState extends State<ClsHome> {
               gv.listText[gv.listText.length - 1],
           style: TextStyle(fontSize: sv.dblDefaultFontSize * 1.5));
     } else {
-      return Text("按下按钮说话",
+      return Text(ls.gs('PressBtnToTalk'),
           style: TextStyle(fontSize: sv.dblDefaultFontSize * 1.5));
     }
   }
@@ -409,7 +527,7 @@ class _ClsHomeState extends State<ClsHome> {
                     ? new RTCVideoView(_remoteRenderer)
                     : Center(
                         child: Text(
-                          'Click To Enable Video',
+                          ls.gs('EnableVideo'),
                           style:
                               TextStyle(fontSize: sv.dblDefaultFontSize * 1.5),
                         ),
@@ -501,40 +619,7 @@ class _ClsHomeState extends State<ClsHome> {
 //            ],
 //          ),
 //          Text(' '),
-          Container(
-            child: Row(
-              children: <Widget>[
-                Text("  Learn AIML: ", style: TextStyle(fontSize: sv.dblDefaultFontSize * 1)),
-                new Transform.scale(
-                  scale: 2.0,
-                  child: new Checkbox(
-                    value: gv.bolLearnAIML,
-                    onChanged: (bool value) {
-                      setState(() {
-                        gv.bolLearnAIML = value;
-                      });
-                    },
-                  ),
-                ),
-                Expanded(
-                  child: Text(''),
-                ),
-                Container(
-                  // height: sv.dblBodyHeight / 4,
-                  // width: sv.dblScreenWidth / 4,
-                  child: Center(
-                    child: SizedBox(
-                      height: sv.dblDefaultFontSize * 2,
-                      width: sv.dblScreenWidth / 3,
-                      child: AddAnsButton(),
-                    ),
-                  ),
-                ),
-                Text('  '),
-              ],
-            ),
-          ),
-          Text(''),
+
           Container(
             width: sv.dblScreenWidth,
             child: Column(
@@ -556,6 +641,18 @@ class _ClsHomeState extends State<ClsHome> {
                       height: sv.dblDefaultFontSize * 2.5,
                       width: sv.dblScreenWidth / 3,
                       child: RecordButton(),
+                    ),
+                  ),
+                ),
+                Text(' '),
+                Container(
+                  // height: sv.dblBodyHeight / 4,
+                  // width: sv.dblScreenWidth / 4,
+                  child: Center(
+                    child: SizedBox(
+                      height: sv.dblDefaultFontSize * 2.5,
+                      width: sv.dblScreenWidth / 3,
+                      child: AddAnsButton(),
                     ),
                   ),
                 ),
@@ -584,6 +681,7 @@ class _ClsHomeState extends State<ClsHome> {
       //    }
 
       return Scaffold(
+        resizeToAvoidBottomPadding: true,
         appBar: PreferredSize(
           child: AppBar(
             title: Text(
