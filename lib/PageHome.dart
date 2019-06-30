@@ -93,7 +93,7 @@ class _ClsHomeState extends State<ClsHome> {
     //incall.checkRecordPermission();
     //incall.requestRecordPermission();
     //incall.start({'media': 'audio', 'auto': true, 'ringback': ''});
-    //incall.setSpeakerphoneOn(true);
+    //incall.setForceSpeakerphoneOn(true);
   }
 
   @override
