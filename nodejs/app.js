@@ -19,8 +19,10 @@ const http = require('https');
 
 
 // Bing Image Search
+// Old key
 //var BingSubscriptionKey = 'b0541b758e434de198f1cc60e02ed865';
-var BingSubscriptionKey = '20d116b898d14307b276e750db352997';
+// New key
+var BingSubscriptionKey = 'c91fc63e21fe4b009ab0904ef3b6efff';
 var BingHost = 'api.cognitive.microsoft.com';
 var BingPath = '/bing/v7.0/images/search';
 let httpsBing = require('https');
@@ -1235,6 +1237,13 @@ function funZFBValueDB(strValue) {
 
 function funBingImageSearch(strCaller, strSearch, aryValues) {
     try {
+        let strLang = 'en';
+        if (stringBytes(strSearch) === strSearch.length) {
+            strLang = 'en';
+        } else {
+            strLang = 'sc';
+        }
+
         let BingRequest_Params = {
             method: 'GET',
             hostname: BingHost,
@@ -1263,9 +1272,23 @@ function funBingImageSearch(strCaller, strSearch, aryValues) {
 
                 let aryBingImgFinal = [];
 
-                if (aryBingBody.value.length < intMax) {
-                    intMax = aryBingBody.value.length;
+                try {
+                    if (aryBingBody.value.length < intMax) {
+                        intMax = aryBingBody.value.length;
+                    }
+                } catch (err) {
+                    funUpdateServerMonitor("Bing Image Search [aryBingBody] Error:" + err, true);
+                    let strAnswer = '';
+                    if (strLang == 'en') {
+                        strAnswer = "I don't have the image of " + strSearch + '.';
+                    } else {
+                        strAnswer = '我没有' + strSearch + '的图片。';
+                    }
+                    funAIMLEndRes(aryValues[0], aryValues[1], strAnswer);
+                    return;
                 }
+
+                
 
                 for (let i = 1; i <= intMax; i++) {
                     try {
@@ -1279,6 +1302,7 @@ function funBingImageSearch(strCaller, strSearch, aryValues) {
                     for (let x = 0; x < aryClients.length; x++) {
                         if (aryValues[1] === aryClients[x].userId && aryClients[x].connectionCode != aryValues[0]) {
                             socketAll.to(`${aryClients[x].connectionCode}`).emit('ShowImage', aryBingImgFinal);
+                            funUpdateServerMonitor("Sent Bing Image to pib.", true);
                         }
                     }
                 } else {
@@ -1596,6 +1620,20 @@ function funGenRandomString(intLength) {
         strTemp += codeChars[charNum];
     }
     return strTemp;
+}
+
+
+function stringBytes(c) {
+    let n = c.length, s;
+    let len = 0;
+    for (let i = 0; i < n; i++) {
+        s = c.charCodeAt(i);
+        while (s > 0) {
+            len++;
+            s = s >> 8;
+        }
+    }
+    return len;
 }
 
 
