@@ -21,7 +21,7 @@ dependencies:
   cupertino_icons: ^0.1.2
   dio:
   threading:
-  simple_permissions: ^0.1.9
+  #simple_permissions: ^0.1.9
   shared_preferences:
   speech_recognition: ^0.3.0+1
   adhara_socket_io: "<=0.1.11"

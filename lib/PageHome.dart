@@ -14,6 +14,7 @@ import 'package:flutter/services.dart';
 // import 'package:simple_permissions/simple_permissions.dart';
 // import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter_webrtc/webrtc.dart';
+import 'package:stt01/GlobalVariables.dart' as prefix0;
 import 'package:threading/threading.dart';
 
 import 'flutter_incall_manager.dart';
@@ -77,6 +78,9 @@ class _ClsHomeState extends State<ClsHome> {
   Signaling _signaling;
   RTCVideoRenderer _localRenderer = new RTCVideoRenderer();
   RTCVideoRenderer _remoteRenderer = new RTCVideoRenderer();
+
+  // Stt
+  bool bolTranslate = false;
 
   // flutter incall manager
   //IncallManager incall = new IncallManager();
@@ -327,9 +331,15 @@ class _ClsHomeState extends State<ClsHome> {
       if (gv.bolWebRtcShouldInit) {
         gv.bolWebRtcShouldInit = false;
         _hangUp();
-        gv.storeHome.dispatch(Actions.Increment);
+        gv.storeHome.dispatch(prefix0.Actions.Increment);
         funHomeInputAudio();
       } else {
+        if (bolTranslate) {
+          gv.sttType = 'T';
+        } else {
+          gv.sttType = 'O';
+        }
+
         if (!gv.sttIsListening) {
           // Start Record
           gv.sttStart();
@@ -391,7 +401,7 @@ class _ClsHomeState extends State<ClsHome> {
       } else {
         gv.bolWebRtcShouldInit = true;
         gv.sttCancel();
-        gv.storeHome.dispatch(Actions.Increment);
+        gv.storeHome.dispatch(prefix0.Actions.Increment);
         funWebRTCBtnPressed();
       }
     } catch (err) {
@@ -455,6 +465,8 @@ class _ClsHomeState extends State<ClsHome> {
     }
   }
 
+  void chkTranslateChanged(bool value) => setState(() => bolTranslate = value);
+
   Widget AddAnsButton() {
     var text = ls.gs('EditAnswer');
     var color = Colors.blueAccent;
@@ -487,6 +499,8 @@ class _ClsHomeState extends State<ClsHome> {
       child: Text(text, style: TextStyle(fontSize: sv.dblDefaultFontSize * 1)),
     );
   }
+
+
 
   Widget STTBody() {
     if (gv.listText.length != 0) {
@@ -526,12 +540,12 @@ class _ClsHomeState extends State<ClsHome> {
                 child: (gv.rtcInCalling)
                     ? new RTCVideoView(_remoteRenderer)
                     : Center(
-                        child: Text(
-                          ls.gs('EnableVideo'),
-                          style:
-                              TextStyle(fontSize: sv.dblDefaultFontSize * 1.5),
-                        ),
-                      ),
+                  child: Text(
+                    ls.gs('EnableVideo'),
+                    style:
+                    TextStyle(fontSize: sv.dblDefaultFontSize * 1.5),
+                  ),
+                ),
               ),
             ),
           ),
@@ -553,10 +567,10 @@ class _ClsHomeState extends State<ClsHome> {
                   //gv.dblAlignY = ((dragDetails2.globalPosition.dy - sv.dblTopHeight * 1.5) * 2 - sv.dblScreenHeight / 2) / sv.dblScreenHeight * 2;
                   // 自己container的height - 上面所有widget的height， 再除以自己Container的height，最后减0.5再乘以2
                   gv.dblAlignY = ((dragDetails2.globalPosition.dy -
-                                  sv.dblBodyHeight / 3.5 -
-                                  sv.dblTopHeight) /
-                              (sv.dblBodyHeight / 3) -
-                          0.5) *
+                      sv.dblBodyHeight / 3.5 -
+                      sv.dblTopHeight) /
+                      (sv.dblBodyHeight / 3) -
+                      0.5) *
                       2;
                   //print(gv.dblAlignY);
                   if (gv.dblAlignY > 1) {
@@ -565,13 +579,13 @@ class _ClsHomeState extends State<ClsHome> {
                   if (gv.dblAlignY < -1) {
                     gv.dblAlignY = -1;
                   }
-                  gv.storeHome.dispatch(Actions.Increment);
+                  gv.storeHome.dispatch(prefix0.Actions.Increment);
                   funCheckJoyStick();
                 },
                 onPanEnd: (dragDetails1) {
                   gv.dblAlignX = 0;
                   gv.dblAlignY = 0;
-                  gv.storeHome.dispatch(Actions.Increment);
+                  gv.storeHome.dispatch(prefix0.Actions.Increment);
                   gv.socket.emit('RBMoveRobot', [
                     gv.strLoginID,
                     ['F', 0, 0, 0]
@@ -637,6 +651,20 @@ class _ClsHomeState extends State<ClsHome> {
                   // height: sv.dblBodyHeight / 4,
                   // width: sv.dblScreenWidth / 4,
                   child: Center(
+                    child: CheckboxListTile(
+                      value: bolTranslate,
+                      onChanged: chkTranslateChanged,
+                      title: new Text(ls.gs('Translate')),
+                      controlAffinity: ListTileControlAffinity.leading,
+                      activeColor: Colors.red,
+                    ),
+                  ),
+                ),
+                Text(' '),
+                Container(
+                  // height: sv.dblBodyHeight / 4,
+                  // width: sv.dblScreenWidth / 4,
+                  child: Center(
                     child: SizedBox(
                       height: sv.dblDefaultFontSize * 2.5,
                       width: sv.dblScreenWidth / 3,
@@ -645,6 +673,18 @@ class _ClsHomeState extends State<ClsHome> {
                   ),
                 ),
                 Text(' '),
+//                Container(
+//                  // height: sv.dblBodyHeight / 4,
+//                  // width: sv.dblScreenWidth / 4,
+//                  child: Center(
+//                    child: SizedBox(
+//                      height: sv.dblDefaultFontSize * 2.5,
+//                      width: sv.dblScreenWidth / 3,
+//                      child: TranslateButton(),
+//                    ),
+//                  ),
+//                ),
+//                Text(' '),
                 Container(
                   // height: sv.dblBodyHeight / 4,
                   // width: sv.dblScreenWidth / 4,

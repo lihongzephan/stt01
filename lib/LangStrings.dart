@@ -103,6 +103,7 @@ class ls {
     { 'Title':'LearnAIMLSuccess', 'Content':'Successfully Learn AIML'},
     { 'Title':'LearnAIMLFailed', 'Content':'Failed to Learn AIML'},
     { 'Title':'CannotLearnAIML', 'Content':'Cannot Learn AIML with NO Questions/Pattern OR Answer/Template'},
+    { 'Title':'Translate', 'Content':'Voice Input + Translate'},
 
     { 'Title':'ErrCantGetPibId', 'Content':'Error: Get Peer WebRtc Id Timeout'},
   ];
@@ -188,6 +189,7 @@ class ls {
     { 'Title':'LearnAIMLSuccess', 'Content':'成功学习 AIML'},
     { 'Title':'LearnAIMLFailed', 'Content':'学习 AIML 失败'},
     { 'Title':'CannotLearnAIML', 'Content':'无法学习 AIML: 缺乏问题/Pattern 或 答案/Template'},
+    { 'Title':'Translate', 'Content':'语音输入+翻译'},
 
     { 'Title':'ErrCantGetPibId', 'Content':'错误：获取 Peer WebRtc Id 超时'},
   ];
@@ -272,9 +274,10 @@ class ls {
     { 'Title':'EnterAnswer', 'Content':'請輸入答案'},
     { 'Title':'LearnAIMLSuccess', 'Content':'成功學習 AIML'},
     { 'Title':'LearnAIMLFailed', 'Content':'學習 AIML 失敗'},
+    { 'Title':'CannotLearnAIML', 'Content':'無法學習 AIML: 缺乏問題/Pattern 或 答案/Template'},
+    { 'Title':'Translate', 'Content':'語音輸入+翻譯'},
 
     { 'Title':'ErrCantGetPibId', 'Content':'錯誤：獲取 Peer WebRtc Id 超時'},
-    { 'Title':'CannotLearnAIML', 'Content':'無法學習 AIML: 缺乏問題/Pattern 或 答案/Template'},
   ];
 
   // To set Current Language

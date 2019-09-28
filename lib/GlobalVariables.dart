@@ -218,6 +218,9 @@ class gv {
 
   static String sttRecognisedLang = 'EN';
 
+  // O = 'Original' or T = 'Translate'
+  static String sttType = '';
+
   //String _currentLocale = 'en_US';
   static Language sttSelectedLang = languages.first;
 
@@ -332,12 +335,19 @@ class gv {
 
             ut.funDebug("sttRecognisedLang: " + sttRecognisedLang);
 
-            // Remove all '/' in text, as '+' and '/' are two symbols in all 64 symbols
-            String strB64Text = base64.encode(utf8.encode(text));
-            strB64Text = strB64Text.replaceAll('/', '_');
-            //ut.funDebug('strB64Text: ' + strB64Text);
+            if (gv.sttType == 'O') {
+              // Remove all '/' in text, as '+' and '/' are two symbols in all 64 symbols
+              String strB64Text = base64.encode(utf8.encode(text));
+              strB64Text = strB64Text.replaceAll('/', '_');
+              //ut.funDebug('strB64Text: ' + strB64Text);
 
-            gv.dioGet('sttResult', 'http://www.zephan.top:10551/get/' + aimlKey + '/' + sttRecognisedLang + '/' + strB64Text);
+              gv.dioGet('sttResult', 'http://www.zephan.top:10551/get/' + aimlKey + '/' + sttRecognisedLang + '/' + strB64Text);
+            } else {
+              gv.socket.emit('SendVoiceInputTranslate', [text, sttRecognisedLang]);
+              ut.funDebug('SendVoiceInputTranslate: ' + text);
+            }
+
+
             break;
           default:
             break;
@@ -809,7 +819,7 @@ class gv {
         await Thread.sleep(intHBInterval);
         if (socket != null) {
           // print('Sending HB...' + DateTime.now().toString());
-          socket.emit('HB', [strLoginID, rtcSelfId]);
+          socket.emit('HB', [strLoginID, rtcSelfId, gstrLang]);
         }
 
         if (DateTime.now().millisecondsSinceEpoch - timLastHbReceive > intHBFinalTimeout) {

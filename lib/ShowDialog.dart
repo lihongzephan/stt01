@@ -2,6 +2,7 @@
 
 // Import Flutter Darts
 import 'package:flutter/material.dart';
+import 'package:stt01/GlobalVariables.dart' as prefix0;
 
 // Import Self Darts
 import 'GlobalVariables.dart';
@@ -131,7 +132,7 @@ class sd {
                         gv.socket.emit('LogoutFromServer', []);
 
                         // Increment storeSettingsMain to refresh page
-                        gv.storeSettingsMain.dispatch(Actions.Increment);
+                        gv.storeSettingsMain.dispatch(prefix0.Actions.Increment);
                       },
                     ),
                     new FlatButton(
@@ -168,7 +169,7 @@ class sd {
                         gv.socket.emit('LogoutFromServer', []);
 
                         // Increment storeSettingsMain to refresh page
-                        gv.storeSettingsMain.dispatch(Actions.Increment);
+                        gv.storeSettingsMain.dispatch(prefix0.Actions.Increment);
                       },
                       child: Center(
                         child: Text(

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:modal_progress_hud/modal_progress_hud.dart';
 import 'package:redux/redux.dart';
+import 'package:stt01/GlobalVariables.dart' as prefix1;
 import 'package:threading/threading.dart';
 
 // Import Self Darts
@@ -36,17 +37,17 @@ class ClsPersonalInformation extends StatelessWidget {
           ut.stringBytes(gv.ctlPerInfoUserNick.text) >
               gv.intDefUserNickMaxLen) {
         gv.strPerInfoError = ls.gs('UserNickErrorMinMaxLen');
-        gv.storePerInfo.dispatch(Actions.Increment);
+        gv.storePerInfo.dispatch(prefix1.Actions.Increment);
         return;
       }
       if (!ut.isEmail(gv.ctlPerInfoUserEmail.text)) {
         gv.strPerInfoError = ls.gs('EmailAddressFormatError');
-        gv.storePerInfo.dispatch(Actions.Increment);
+        gv.storePerInfo.dispatch(prefix1.Actions.Increment);
         return;
       }
       if (ut.stringBytes(gv.ctlPerInfoUserEmail.text) > gv.intDefEmailMaxLen) {
         gv.strPerInfoError = ls.gs('EmailAddressFormatError');
-        gv.storePerInfo.dispatch(Actions.Increment);
+        gv.storePerInfo.dispatch(prefix1.Actions.Increment);
         return;
       }
       if (gv.ctlPerInfoUserNick.text == gv.strPerInfoUsr_NickL && gv.ctlPerInfoUserEmail.text == gv.strPerInfoUsr_EmailL) {
@@ -77,7 +78,7 @@ class ClsPersonalInformation extends StatelessWidget {
       // Check Network Connection
       if (!gv.gbolSIOConnected) {
         gv.strPerInfoError = ls.gs('NetworkDisconnectedTryLater');
-        gv.storePerInfo.dispatch(Actions.Increment);
+        gv.storePerInfo.dispatch(prefix1.Actions.Increment);
         return;
       }
 
@@ -86,7 +87,7 @@ class ClsPersonalInformation extends StatelessWidget {
 
       // Show Loading
       gv.bolLoading = true;
-      gv.storePerInfo.dispatch(Actions.Increment);
+      gv.storePerInfo.dispatch(prefix1.Actions.Increment);
 
       // Check Email Changed or not
       bool bolEmailChanged = false;
@@ -118,7 +119,7 @@ class ClsPersonalInformation extends StatelessWidget {
                 gv.intSocketTimeout) {
               gv.bolLoading = false;
               gv.strPerInfoError = ls.gs('TimeoutError');
-              gv.storePerInfo.dispatch(Actions.Increment);
+              gv.storePerInfo.dispatch(prefix1.Actions.Increment);
             } else {
               // Not Yet Timout, so Continue Loading
             }
@@ -157,7 +158,7 @@ class ClsPersonalInformation extends StatelessWidget {
               // Show Change Personal Information Failed
               gv.strPerInfoError = ls.gs('SystemError');
               gv.bolLoading = false;
-              gv.storePerInfo.dispatch(Actions.Increment);
+              gv.storePerInfo.dispatch(prefix1.Actions.Increment);
             }
           }
         }
@@ -262,7 +263,7 @@ class ClsPersonalInformation extends StatelessWidget {
 
       // Set bolLoading = true
       gv.bolLoading = true;
-      gv.storePerInfo.dispatch(Actions.Increment);
+      gv.storePerInfo.dispatch(prefix1.Actions.Increment);
 
       gv.resetVars();
 
@@ -296,7 +297,7 @@ class ClsPersonalInformation extends StatelessWidget {
         // This is CRAZY here !!!
         // Cannot dispatch storePerInfo, but storeSettingsMain
         // Otherwise the "Loading" icon does not disappear!!!
-        gv.storePerInfo.dispatch(Actions.Increment);
+        gv.storePerInfo.dispatch(prefix1.Actions.Increment);
         print('PerInfo Dispatched');
       });
     }
