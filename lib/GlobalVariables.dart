@@ -343,8 +343,9 @@ class gv {
 
               gv.dioGet('sttResult', 'http://www.zephan.top:10551/get/' + aimlKey + '/' + sttRecognisedLang + '/' + strB64Text);
             } else {
-              gv.socket.emit('SendVoiceInputTranslate', [text, sttRecognisedLang]);
-              ut.funDebug('SendVoiceInputTranslate: ' + text);
+              ut.funDebug('Sending Voice Input Translate: ' + text);
+              gv.socket.emit('SendVoiceInputTranslate', [text]);
+              ut.funDebug('Sent Voice Input Translate: ' + text);
             }
 
 

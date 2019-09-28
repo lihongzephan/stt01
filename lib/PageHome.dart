@@ -276,7 +276,8 @@ class _ClsHomeState extends State<ClsHome> {
           if (ut.stringBytes(gv.strAddAIML) == gv.strAddAIML.length) {
             strLang = 'EN';
           } else {
-            strLang = gv.gstrLang;
+            //strLang = gv.gstrLang;
+            strLang = 'SC';
           }
 
           bool bolContinue = true;
@@ -504,10 +505,13 @@ class _ClsHomeState extends State<ClsHome> {
 
   Widget STTBody() {
     if (gv.listText.length != 0) {
+//      return Text(
+//          gv.listText.length.toString() +
+//              ': ' +
+//              gv.listText[gv.listText.length - 1],
+//          style: TextStyle(fontSize: sv.dblDefaultFontSize * 1.5));
       return Text(
-          gv.listText.length.toString() +
-              ': ' +
-              gv.listText[gv.listText.length - 1],
+          gv.listText[gv.listText.length - 1],
           style: TextStyle(fontSize: sv.dblDefaultFontSize * 1.5));
     } else {
       return Text(ls.gs('PressBtnToTalk'),
@@ -633,7 +637,6 @@ class _ClsHomeState extends State<ClsHome> {
 //            ],
 //          ),
 //          Text(' '),
-
           Container(
             width: sv.dblScreenWidth,
             child: Column(
@@ -641,26 +644,45 @@ class _ClsHomeState extends State<ClsHome> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
                 Container(
-                  // width: sv.dblScreenWidth / 2,
+                  height: sv.dblDefaultFontSize * 3,
+                  width: sv.dblScreenWidth * 0.9,
                   child: Center(
-                    child: STTBody(),
-                  ),
-                ),
-                Text(' '),
-                Container(
-                  // height: sv.dblBodyHeight / 4,
-                  // width: sv.dblScreenWidth / 4,
-                  child: Center(
-                    child: CheckboxListTile(
-                      value: bolTranslate,
-                      onChanged: chkTranslateChanged,
-                      title: new Text(ls.gs('Translate')),
-                      controlAffinity: ListTileControlAffinity.leading,
-                      activeColor: Colors.red,
+                    child: SingleChildScrollView(
+                        child: STTBody(),
                     ),
                   ),
                 ),
-                Text(' '),
+                Text(' ', style: TextStyle(fontSize: sv.dblDefaultFontSize * 0.5),),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Checkbox(
+                      value: bolTranslate,
+                      onChanged: chkTranslateChanged,
+                      activeColor: Colors.red,
+                    ),
+                    Text(
+                      ls.gs('Translate'),
+                        style: TextStyle(
+                            fontSize: sv.dblDefaultFontSize
+                        ),
+                    ),
+                  ],
+                ),
+//                Container(
+//                  // height: sv.dblBodyHeight / 4,
+//                  // width: sv.dblScreenWidth / 4,
+//                  child: Center(
+//                    child: CheckboxListTile(
+//                      value: bolTranslate,
+//                      onChanged: chkTranslateChanged,
+//                      title: new Text(ls.gs('Translate')),
+//                      controlAffinity: ListTileControlAffinity.leading,
+//                      activeColor: Colors.red,
+//                    ),
+//                  ),
+//                ),
+                Text(' ', style: TextStyle(fontSize: sv.dblDefaultFontSize * 0.5),),
                 Container(
                   // height: sv.dblBodyHeight / 4,
                   // width: sv.dblScreenWidth / 4,
@@ -672,19 +694,7 @@ class _ClsHomeState extends State<ClsHome> {
                     ),
                   ),
                 ),
-                Text(' '),
-//                Container(
-//                  // height: sv.dblBodyHeight / 4,
-//                  // width: sv.dblScreenWidth / 4,
-//                  child: Center(
-//                    child: SizedBox(
-//                      height: sv.dblDefaultFontSize * 2.5,
-//                      width: sv.dblScreenWidth / 3,
-//                      child: TranslateButton(),
-//                    ),
-//                  ),
-//                ),
-//                Text(' '),
+                Text(' ', style: TextStyle(fontSize: sv.dblDefaultFontSize * 0.5),),
                 Container(
                   // height: sv.dblBodyHeight / 4,
                   // width: sv.dblScreenWidth / 4,
@@ -721,7 +731,7 @@ class _ClsHomeState extends State<ClsHome> {
       //    }
 
       return Scaffold(
-        resizeToAvoidBottomPadding: true,
+        resizeToAvoidBottomPadding: false,
         appBar: PreferredSize(
           child: AppBar(
             title: Text(
