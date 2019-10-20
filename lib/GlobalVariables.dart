@@ -452,11 +452,13 @@ class gv {
 
   static dioPost(String strCaller, String strUrl, List<String> aryValues) async {
       try {
-        dio.options.contentType = ContentType.parse("application/x-www-form-urlencoded");
+        //dio.options.contentType = ContentType.parse("application/x-www-form-urlencoded");
+        dio.options.contentType = "application/x-www-form-urlencoded";
         Response response = await dio.post(
             strUrl,
             data: { 'aryAjaxSend': base64.encode(utf8.encode(json.encode(aryValues)))},
-            options: new Options(contentType: ContentType.parse("application/x-www-form-urlencoded"))
+            //options: new Options(contentType: ContentType.parse("application/x-www-form-urlencoded"))
+            options: new Options(contentType: "application/x-www-form-urlencoded")
         );
 
         // Decode response

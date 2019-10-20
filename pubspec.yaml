@@ -24,6 +24,7 @@ dependencies:
   #simple_permissions: ^0.1.9
   shared_preferences:
   speech_recognition: ^0.3.0+1
+  #speech_recognition:
   adhara_socket_io: "<=0.1.11"
   modal_progress_hud:
   fluttertoast: "<=3.0.3"
